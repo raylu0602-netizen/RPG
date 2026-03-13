@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的奇幻 RPG 冒險</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="game-layout">
+        <aside class="sidebar stats-sidebar">
+            <h3>🛡️ 英雄狀態</h3>
+            <div class="stats-panel">
+                <p>等級: <span id="player-level" class="highlight">1</span></p>
+                <p>⚔️ 攻擊: <span id="player-atk-display" class="highlight">5 - 12</span></p>
+                <p>💰 金幣: <span id="player-coin-display" class="highlight">0</span></p>
+                <hr>
+                <p>生命值 (HP):</p>
+                <div class="hp-bar-container">
+                    <div id="player-hp-fill" class="hp-fill" style="width: 100%;"></div>
+                </div>
+                <small id="player-hp">100 / 100</small>
+
+                <p style="margin-top:10px;">經驗值 (EXP):</p>
+                <div class="hp-bar-container">
+                    <div id="player-exp-fill" class="hp-fill exp-fill" style="width: 0%;"></div>
+                </div>
+                <small id="player-exp">0 / 100</small>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div id="monster-area">
+                <h2 id="monster-name">🌲 準備探險...</h2>
+                <div class="hp-bar-container">
+                    <div id="monster-hp-fill" class="hp-fill monster-fill" style="width: 0%;"></div>
+                </div>
+                <small id="monster-hp">休息中</small>
+                
+                <div id="monster-img-container">
+                    <img id="monster-img" src="" style="display: none;">
+                    <p id="placeholder-text">點擊下方按鈕開始你的冒險</p>
+                </div>
+            </div>
+
+            <div id="controls">
+                <button id="explore-btn" onclick="explore()" class="btn-main">🧭 開始探險</button>
+                
+                <div id="battle-actions" style="display: none;">
+                    <button onclick="attack()" class="btn-attack">⚔️ 普通攻擊</button>
+                    <button id="fireball-btn" onclick="useFireball()" class="btn-skill" title="造成 250% 攻擊力 + 10 點的魔法傷害">🔥 火球術</button>
+                </div>
+                
+                <div class="system-btns">
+                    <button id="reset-btn" onclick="resetGame()">🔄 重置</button>
+                    <button onclick="deleteSave()" class="btn-danger">🗑️ 刪存</button>
+                </div>
+            </div>
+
+            <div id="log">
+                <p class="system-msg">系統：遊戲已就緒，請冒險者出發。</p>
+            </div>
+        </main>
+
+        <aside class="sidebar" id="shop-container">
+            <h3>🛒 冒險者商店</h3>
+            <div class="shop-item">
+                <span>🧪 紅色藥水 (20g)</span>
+                <button onclick="buyItem('potion')">買</button>
+            </div>
+            <div class="shop-item">
+                <span>⚔️ 鋒利長劍 (100g)</span>
+                <button onclick="buyItem('sword')">買</button>
+            </div>
+            <div class="shop-item" id="shop-lightning">
+                <span>📘 閃電斬技能書 (150g)</span>
+                <button onclick="buyItem('lightning_book')">學習</button>
+            </div>
+            <div class="shop-item" id="shop-heal">
+                <span>📗 治癒術技能書 (200g)</span>
+                <button onclick="buyItem('heal_book')">學習</button>
+            </div>
+            <p style="font-size: 0.8em; color: #888; margin-top: 20px;">* 戰鬥期間商店不營業 *</p>
+        </aside>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
