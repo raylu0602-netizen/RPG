@@ -15,6 +15,8 @@
                 <p>等級: <span id="player-level" class="highlight">1</span></p>
                 <p>⚔️ 攻擊: <span id="player-atk-display" class="highlight">5 - 12</span></p>
                 <p>💰 金幣: <span id="player-coin-display" class="highlight">0</span></p>
+                <p>📿 十字架: <span id="player-amulet-display" class="highlight">0</span></p>
+                <hr>
                 <hr>
                 <p>生命值 (HP):</p>
                 <div class="hp-bar-container">
@@ -80,6 +82,10 @@
             <div class="shop-item" id="shop-heal">
                 <span>📗 治癒術技能書 (200g)</span>
                 <button onclick="buyItem('heal_book')">學習</button>
+            </div>
+            <div class="shop-item">
+                <span>📿 守護十字架 (300g)</span>
+                <button onclick="buyItem('amulet')">購買</button>
             </div>
             <p style="font-size: 0.8em; color: #888; margin-top: 20px;">* 戰鬥期間商店不營業 *</p>
         </aside>

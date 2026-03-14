@@ -3,9 +3,9 @@ let player = {
     hp: 100, maxHp: 100, coin: 0, level: 1, exp: 0, nextLevelExp: 100,
     atkRange: [5, 12],
     skills: { fireballCD: 0, lightningCD: 0, healCD: 0 },
-    // 🌟 新增：記錄已解鎖的技能
     unlockedSkills: { fireball: true, lightning: false, heal: false }, 
-    bossDefeatedLevel: 0
+    bossDefeatedLevel: 0,
+    protectionAmulet: 0 // <--- 🌟 加上這行：初始擁有 0 個守護十字架
 };
 
 const monsters = [
@@ -106,11 +106,23 @@ function buyItem(item) {
             addLog("❌ 金幣不足！");
         }
     }
+    else if (item === 'amulet') {
+        if (player.coin >= 300) {
+            player.coin -= 300;
+            player.protectionAmulet++;
+            addLog("📿 <b style='color:#f1c40f;'>你購買了守護十字架！下次死亡時將自動消耗並免除懲罰。</b>");
+        } else {
+            addLog("❌ 金幣不足！");
+        }
+    }
     
     saveGame(); // 買完存檔
     updateUI(); // 刷新介面
 }
 function updateUI() {
+    if (player.protectionAmulet === undefined) player.protectionAmulet = 0;
+    const amuletDisplay = document.getElementById('player-amulet-display');
+    if(amuletDisplay) amuletDisplay.innerText = player.protectionAmulet;
     // 玩家狀態與等級
     document.getElementById('player-hp').innerText = `${player.hp} / ${player.maxHp}`;
     document.getElementById('player-hp-fill').style.width = (player.hp / player.maxHp * 100) + "%";
@@ -368,9 +380,84 @@ function monsterTurn() {
     
     if (player.hp <= 0) {
         player.hp = 0;
-        addLog("<b style='color:red;'>💀 你被打敗了。遊戲結束！</b>");
+        addLog("<b style='color:red; font-size:1.2em;'>💀 你倒下了... 請選擇復活。</b>");
+        
+        // 隱藏戰鬥按鈕
         document.getElementById('battle-actions').style.display = 'none';
+        
+        // 🌟 把探險按鈕改成「復活按鈕」
+        const exploreBtn = document.getElementById('explore-btn');
+        exploreBtn.style.display = 'inline-block';
+        exploreBtn.innerText = "☠️ 接受命運並復活";
+        exploreBtn.style.backgroundColor = "#e74c3c"; // 變成紅色警告
+        exploreBtn.onclick = revive; // 點擊時觸發復活函數
     }
+}
+// --- ☠️ 復活與死亡懲罰系統 ---
+// --- ☠️ 復活與死亡懲罰系統 (動態懲罰版) ---
+function revive() {
+    // 1. 檢查是否有免死金牌
+    if (player.protectionAmulet > 0) {
+        player.protectionAmulet--;
+        addLog("✨ <b style='color:#f1c40f;'>【守護十字架】發出耀眼光芒碎裂了！你免除了死亡懲罰並滿血復活！</b>");
+    } 
+    // 2. 沒有道具，執行嚴厲的死亡懲罰
+    else {
+        if (player.level > 1) {
+            // 🌟 懲罰隨等級增加：基礎掉 1 級，每 5 級多掉 1 級
+            let levelsToLose = 1 + Math.floor(player.level / 5);
+            
+            // 確保不會掉到 1 級以下
+            if (player.level - levelsToLose < 1) {
+                levelsToLose = player.level - 1;
+            }
+
+            // 用迴圈安全地扣除屬性
+            for (let i = 0; i < levelsToLose; i++) {
+                player.level--;
+                player.maxHp -= 20; 
+                player.atkRange[0] -= 2;
+                player.atkRange[1] -= 4;
+            }
+            
+            // 🌟 精準重算升級所需經驗值 (防止來回升降級造成數值小數點誤差)
+            player.nextLevelExp = Math.floor(100 * Math.pow(1.5, player.level - 1));
+            player.exp = 0; // 當前經驗歸零
+            
+            // 🌟 額外懲罰：隨等級扣除一定比例的金幣 (每級增加 2% 掉落率，最高扣 50%)
+            let coinLossRate = Math.min(0.5, player.level * 0.02);
+            let lostCoins = Math.floor(player.coin * coinLossRate);
+            player.coin -= lostCoins;
+
+            addLog(`💀 <b style='color:red;'>你遭受了嚴重的死亡懲罰！失去了 ${levelsToLose} 個等級與 ${lostCoins} 枚金幣...</b>`);
+        } else {
+            // 只有 1 級時，扣除 50% 金幣
+            player.exp = 0;
+            let lostCoins = Math.floor(player.coin * 0.5);
+            player.coin -= lostCoins;
+            addLog(`💀 <b style='color:red;'>你復活了。作為代價你失去了所有的經驗與 ${lostCoins} 枚金幣。</b>`);
+        }
+    }
+
+    // 3. 恢復狀態與 UI
+    player.hp = player.maxHp;       // 滿血復活
+    currentMonster = null;          // 怪物消失
+    player.skills.fireballCD = 0;   // 重置技能 CD
+    player.skills.lightningCD = 0;
+    player.skills.healCD = 0;
+
+    // 把按鈕變回原本的「探險按鈕」
+    const exploreBtn = document.getElementById('explore-btn');
+    exploreBtn.innerText = `🧭 開始探險 (💰 ${player.coin})`;
+    exploreBtn.style.backgroundColor = "#7289da"; 
+    exploreBtn.onclick = explore; 
+
+    // 顯示商店
+    const shopContainer = document.getElementById('shop-container');
+    if(shopContainer) shopContainer.style.display = 'block';
+    
+    saveGame(); // 復活後強制存檔
+    updateUI();
 }
 function deleteSave() {
     if (confirm("確定要刪除所有冒險進度嗎？這無法還原！")) {
