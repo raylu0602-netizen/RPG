@@ -16,7 +16,7 @@ const monsters = [
 // --- 魔王設定 ---
 const bossTemplate = {
     name: "深淵魔龍", 
-    hp: 200, maxHp: 200, 
+    hp: 150, maxHp: 150, 
     image: "images/boss.jpg", // 你可以改成 "images/boss.png"
     atk: [15, 25], 
     exp: 200, coin: 100,
