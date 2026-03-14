@@ -9,9 +9,9 @@ let player = {
 };
 
 const monsters = [
-    { name: "綠色史萊姆", hp: 30, maxHp: 30, image: "images/slime.png", atk: [3, 8], exp: 25, coin: 5 },
-    { name: "森林哥布林", hp: 55, maxHp: 55, image: "images/goblin.jpg", atk: [6, 12], exp: 45, coin: 12 },
-    { name: "地獄小惡魔", hp: 90, maxHp: 90, image: "images/imp.png", atk: [12, 18], exp: 80, coin: 30 }
+    { name: "綠色史萊姆", hp: 30, maxHp: 30, image: "images/slime.png", atk: [3, 6], exp: 25, coin: 10 },
+    { name: "森林哥布林", hp: 55, maxHp: 55, image: "images/goblin.jpg", atk: [6, 12], exp: 50, coin: 20 },
+    { name: "地獄小惡魔", hp: 90, maxHp: 90, image: "images/imp.png", atk: [12, 18], exp: 100, coin: 40 }
 ];
 // --- 魔王設定 ---
 const bossTemplate = {
@@ -134,28 +134,45 @@ function updateUI() {
     if (!player.unlockedSkills) player.unlockedSkills = { fireball: true, lightning: false, heal: false };
 
     // 更新閃電斬按鈕
-    const lightningBtn = document.getElementById('lightning-btn');
-    if(lightningBtn) {
-        // 如果解鎖了就顯示，沒解鎖就隱藏
-        lightningBtn.style.display = player.unlockedSkills.lightning ? 'inline-block' : 'none';
-        lightningBtn.disabled = player.skills.lightningCD > 0;
-        lightningBtn.innerText = player.skills.lightningCD > 0 ? `⚡ CD ${player.skills.lightningCD}` : "⚡ 閃電斬";
+    const ltBtn = document.getElementById('lightning-btn');
+    if (ltBtn) {
+        const isLtUnlocked = player.unlockedSkills && player.unlockedSkills.lightning;
+        ltBtn.style.display = isLtUnlocked ? 'inline-block' : 'none';
+        
+        if (isLtUnlocked) {
+            if (player.skills.lightningCD > 0) {
+                ltBtn.disabled = true;
+                ltBtn.innerText = `⚡ CD ${player.skills.lightningCD}`;
+            } else {
+                ltBtn.disabled = false;
+                ltBtn.innerText = "⚡ 閃電斬";
+            }
+        }
     }
 
-    // 更新治癒術按鈕
-    const healBtn = document.getElementById('heal-btn');
-    if(healBtn) {
-        healBtn.style.display = player.unlockedSkills.heal ? 'inline-block' : 'none';
-        healBtn.disabled = player.skills.healCD > 0;
-        healBtn.innerText = player.skills.healCD > 0 ? `🌿 CD ${player.skills.healCD}` : "🌿 治癒術";
+    // 2. 處理【治癒術】按鈕的顯示與冷卻
+    const hlBtn = document.getElementById('heal-btn');
+    if (hlBtn) {
+        const isHlUnlocked = player.unlockedSkills && player.unlockedSkills.heal;
+        hlBtn.style.display = isHlUnlocked ? 'inline-block' : 'none';
+        
+        if (isHlUnlocked) {
+            if (player.skills.healCD > 0) {
+                hlBtn.disabled = true;
+                hlBtn.innerText = `🌿 CD ${player.skills.healCD}`;
+            } else {
+                hlBtn.disabled = false;
+                hlBtn.innerText = "🌿 治癒術";
+            }
+        }
     }
-
-    // 🌟 控制商店裡的技能書：買過就不顯示了
-    const shopLightning = document.getElementById('shop-lightning');
-    if (shopLightning) shopLightning.style.display = player.unlockedSkills.lightning ? 'none' : 'flex';
     
-    const shopHeal = document.getElementById('shop-heal');
-    if (shopHeal) shopHeal.style.display = player.unlockedSkills.heal ? 'none' : 'flex';
+    // ... 控制商店技能書消失的邏輯 ...
+    const shopLt = document.getElementById('shop-lightning');
+    if (shopLt) shopLt.style.display = (player.unlockedSkills && player.unlockedSkills.lightning) ? 'none' : 'flex';
+    
+    const shopHl = document.getElementById('shop-heal');
+    if (shopHl) shopHl.style.display = (player.unlockedSkills && player.unlockedSkills.heal) ? 'none' : 'flex';
 
     // 怪物顯示
     const imgElement = document.getElementById('monster-img');
@@ -248,6 +265,11 @@ function explore() {
         const randomIndex = Math.floor(Math.random() * monsters.length);
         currentMonster = { ...monsters[randomIndex] }; 
         currentMonster.atk = [...monsters[randomIndex].atk]; 
+
+        document.getElementById('battle-actions').style.display = 'block';
+        document.getElementById('explore-btn').style.display = 'none';
+        
+        updateUI();
         
         let multiplier = 1 + (player.level - 1) * 0.2;
         currentMonster.maxHp = Math.floor(currentMonster.maxHp * multiplier);
@@ -259,8 +281,11 @@ function explore() {
         currentMonster.name = `Lv.${player.level} ${currentMonster.name}`;
 
         addLog(`⚠️ 警告！你遭遇了 <b>${currentMonster.name}</b>！`);
+        document.getElementById('battle-actions').style.display = 'inline-block'; // 確保這層父容器開了
         document.getElementById('battle-actions').style.display = 'inline';
         document.getElementById('explore-btn').style.display = 'none';
+        // 遇到怪物時
+        
     } else {
         let baseFound = Math.floor(Math.random() * 10) + 5;
         let finalFound = Math.floor(baseFound * (1 + (player.level - 1) * 0.2));
@@ -323,7 +348,7 @@ function useFireball() {
     let baseDmg = Math.floor(Math.random() * (player.atkRange[1] - player.atkRange[0] + 1)) + player.atkRange[0];
     
     // 2. 加入技能倍率 (例如 2.5 倍) 加上一點額外魔法傷害 (例如 10 點)
-    let finalDmg = Math.floor(baseDmg * 2.5) + 10;
+    let finalDmg = Math.floor(baseDmg * 2.5) +10;
     
     // 3. 扣除怪物血量
     currentMonster.hp -= finalDmg;
@@ -336,7 +361,35 @@ function useFireball() {
     
     checkBattle();
 }
+// --- ⚡ 閃電斬功能 ---
+function useLightning() {
+    if (!currentMonster || player.skills.lightningCD > 0) return;
 
+    // 傷害邏輯：造成攻擊力上限的 2.5 倍傷害
+    let dmg = Math.floor(player.atkRange[1] * 3)+20;
+    currentMonster.hp -= dmg;
+    player.skills.lightningCD = 5; // 設定冷卻時間
+
+    addLog(`⚡ <b style="color:#9b59b6;">閃電斬！</b> 對敵人造成了 <b style="color:#e74c3c;">${dmg}</b> 點巨額傷害！`);
+
+    checkBattle(); // 檢查怪物是否死亡
+}
+
+// --- 🌿 治癒術功能 ---
+function useHeal() {
+    if (!currentMonster || player.skills.healCD > 0) return;
+
+    // 回血邏輯：恢復最大血量的 40%
+    let healAmount = Math.floor(player.maxHp * 0.4);
+    player.hp = Math.min(player.hp + healAmount, player.maxHp);
+    player.skills.healCD = 6; // 設定冷卻時間
+
+    addLog(`🌿 <b style="color:#2ecc71;">治癒術！</b> 恢復了 <b style="color:#2ecc71;">${healAmount}</b> 點生命值！`);
+
+    // 🌟 補血不造成傷害，所以直接讓怪物反擊
+    monsterTurn(); 
+    updateUI();
+}
 function checkBattle() {
     if (currentMonster.hp <= 0) {
         currentMonster.hp = 0;
@@ -367,12 +420,16 @@ function checkBattle() {
         if(shopContainer) shopContainer.style.display = 'block';
         
     } else {
+        reduceCooldowns();
         monsterTurn();
     }
-    if (player.skills.fireballCD > 0) player.skills.fireballCD--;
     updateUI();
 }
-
+function reduceCooldowns() {
+    if (player.skills.fireballCD > 0) player.skills.fireballCD--;
+    if (player.skills.lightningCD > 0) player.skills.lightningCD--;
+    if (player.skills.healCD > 0) player.skills.healCD--;
+}
 function monsterTurn() {
     let dmg = Math.floor(Math.random() * (currentMonster.atk[1] - currentMonster.atk[0])) + currentMonster.atk[0];
     player.hp -= dmg;

@@ -107,6 +107,21 @@ button:hover { filter: brightness(1.2); }
 .btn-attack { background: #e74c3c; margin-right: 10px; }
 .btn-skill { background: #3498db; }
 .btn-danger { background: #333; font-size: 0.8em; }
+.btn-skill {
+    padding: 10px 20px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    transition: 0.3s;
+}
+
+.btn-skill:disabled {
+    background-color: #7f8c8d !important; /* 冷卻中變成灰色 */
+    cursor: not-allowed;
+}
 
 /* 日誌樣式 */
 #log {

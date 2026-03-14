@@ -50,9 +50,12 @@
                 <button id="explore-btn" onclick="explore()" class="btn-main">🧭 開始探險</button>
                 
                 <div id="battle-actions" style="display: none;">
-                    <button onclick="attack()" class="btn-attack">⚔️ 普通攻擊</button>
-                    <button id="fireball-btn" onclick="useFireball()" class="btn-skill" title="造成 250% 攻擊力 + 10 點的魔法傷害">🔥 火球術</button>
-                </div>
+                <button onclick="attack()" class="btn-attack">⚔️ 普通攻擊</button>
+                <button id="fireball-btn" onclick="useFireball()" class="btn-skill">🔥 火球術</button>
+                
+                <button id="lightning-btn" onclick="useLightning()" class="btn-skill" style="background: #9b59b6;">⚡ 閃電斬</button>
+                <button id="heal-btn" onclick="useHeal()" class="btn-skill" style="background: #2ecc71;">🌿 治癒術</button>
+            </div>
                 
                 <div class="system-btns">
                     <button id="reset-btn" onclick="resetGame()">🔄 重置</button>
