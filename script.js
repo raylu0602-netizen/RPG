@@ -1,8 +1,15 @@
 let player = {
     hp: 100, maxHp: 100, coin: 0, level: 1, exp: 0, nextLevelExp: 100,
     atkRange: [5, 12],
+    
+    // --- 技能相關 ---
     skills: { fireballCD: 0, lightningCD: 0, healCD: 0 },
     unlockedSkills: { fireball: true, lightning: false, heal: false }, 
+    
+    // 🌟 加上這行：預設所有技能初始都是 1 級
+    skillLevels: { fireball: 1, lightning: 1, heal: 1 }, 
+    // ----------------
+    
     bossDefeatedLevel: 0,
     protectionAmulet: 0, 
     inventory: [], 
@@ -10,9 +17,8 @@ let player = {
         weapon: null, 
         armor: null   
     },
-    // 基礎屬性 (不含裝備加成)
     baseAtk: [5, 12],
-    extraATK: 0, // 永久攻擊力加成
+    extraATK: 0, 
     baseMaxHp: 100
 };
 
@@ -109,6 +115,37 @@ function buyItem(item) {
             addLog("❌ 金幣不足！");
         }
     }
+    // --- 🌟 將這段加在 buyItem() 的 if...else 判斷鏈裡面 ---
+    else if (item === 'upgrade_fireball') {
+        let cost = 200 + (player.skillLevels.fireball * 150);
+        if (player.coin >= cost) {
+            player.coin -= cost;
+            player.skillLevels.fireball++;
+            addLog(`🔥 花費了 ${cost} 金幣，【火球術】升級到了 <b style="color:#e74c3c;">Lv.${player.skillLevels.fireball}</b>！傷害倍率提升！`);
+        } else {
+            addLog(`❌ 金幣不足，升級火球術需要 ${cost} 金幣。`);
+        }
+    }
+    else if (item === 'upgrade_lightning') {
+        let cost = 300 + (player.skillLevels.lightning * 200);
+        if (player.coin >= cost) {
+            player.coin -= cost;
+            player.skillLevels.lightning++;
+            addLog(`⚡ 花費了 ${cost} 金幣，【閃電斬】升級到了 <b style="color:#9b59b6;">Lv.${player.skillLevels.lightning}</b>！爆發力更恐怖了！`);
+        } else {
+            addLog(`❌ 金幣不足，升級閃電斬需要 ${cost} 金幣。`);
+        }
+    }
+    else if (item === 'upgrade_heal') {
+        let cost = 250 + (player.skillLevels.heal * 150);
+        if (player.coin >= cost) {
+            player.coin -= cost;
+            player.skillLevels.heal++;
+            addLog(`🌿 花費了 ${cost} 金幣，【治癒術】升級到了 <b style="color:#2ecc71;">Lv.${player.skillLevels.heal}</b>！護盾變得更厚了！`);
+        } else {
+            addLog(`❌ 金幣不足，升級治癒術需要 ${cost} 金幣。`);
+        }
+    }
     
     saveGame(); 
     updateUI(); 
@@ -131,7 +168,10 @@ function updateUI() {
     if (player.extraATK === undefined) player.extraATK = 0; 
     if (!player.maxHp) player.maxHp = 100;
     if (!player.unlockedSkills) player.unlockedSkills = { fireball: true, lightning: false, heal: false };
-
+    // 放在 updateUI() 函數的最前面幾行
+    if (!player.skillLevels) {
+        player.skillLevels = { fireball: 1, lightning: 1, heal: 1 };
+    }
     // 重新計算當前總戰鬥力
     player.atkRange = calculateTotalAtk();
 
@@ -187,7 +227,31 @@ function updateUI() {
             ltBtn.innerText = player.skills.lightningCD > 0 ? `⚡ CD ${player.skills.lightningCD}` : "⚡ 閃電斬";
         }
     }
+    if (player.unlockedSkills && player.skillLevels) {
+    // 火球術升級 (預設就有，所以直接顯示)
+        const upgFb = document.getElementById('shop-upg-fireball');
+        if (upgFb) {
+            upgFb.style.display = 'flex'; // 顯示
+            let costFb = 200 + (player.skillLevels.fireball * 150); // 動態價格
+            document.getElementById('fireball-upg-text').innerText = `🔥 升級火球術 Lv.${player.skillLevels.fireball} (${costFb}g)`;
+        }
 
+        // 閃電斬升級 (有解鎖才顯示)
+        const upgLt = document.getElementById('shop-upg-lightning');
+        if (upgLt) {
+            upgLt.style.display = player.unlockedSkills.lightning ? 'flex' : 'none';
+            let costLt = 300 + (player.skillLevels.lightning * 200);
+            document.getElementById('lightning-upg-text').innerText = `⚡ 升級閃電斬 Lv.${player.skillLevels.lightning} (${costLt}g)`;
+        }
+
+        // 治癒術升級 (有解鎖才顯示)
+        const upgHl = document.getElementById('shop-upg-heal');
+        if (upgHl) {
+            upgHl.style.display = player.unlockedSkills.heal ? 'flex' : 'none';
+            let costHl = 250 + (player.skillLevels.heal * 150);
+            document.getElementById('heal-upg-text').innerText = `🌿 升級治癒術 Lv.${player.skillLevels.heal} (${costHl}g)`;
+        }
+}
     const hlBtn = document.getElementById('heal-btn');
     if (hlBtn) {
         const isHlUnlocked = player.unlockedSkills.heal;
@@ -385,7 +449,8 @@ function useFireball() {
     }
 
     let baseDmg = Math.floor(Math.random() * (player.atkRange[1] - player.atkRange[0] + 1)) + player.atkRange[0];
-    let finalDmg = Math.floor(baseDmg * 2.5) + 10;
+    let skillLv = player.skillLevels.fireball;
+    let finalDmg = Math.floor(baseDmg * (1.0 + skillLv * 1)) + (skillLv * 10);
     
     currentMonster.hp -= finalDmg;
     player.skills.fireballCD = 4;
@@ -397,7 +462,8 @@ function useFireball() {
 function useLightning() {
     if (!currentMonster || player.skills.lightningCD > 0) return;
 
-    let dmg = Math.floor(player.atkRange[1] * 3) + 20;
+    let skillLv = player.skillLevels.lightning;
+    let dmg = Math.floor(player.atkRange[1] * (1.5 + skillLv * 1.0)) + (skillLv * 20);
     currentMonster.hp -= dmg;
     player.skills.lightningCD = 5; 
 
@@ -411,7 +477,10 @@ function useHeal() {
     if (!currentMonster || player.skills.healCD > 0) return;
 
     // 1. 治癒量狂飆：吃你那超高的攻擊力加成！
-    let healAmount = Math.floor(player.maxHp * 0.5) + player.atkRange[1];
+    // 原本：let healAmount = Math.floor(player.maxHp * 0.5) + player.atkRange[1];
+    // 🌟 升級版：每升一級，吃最大血量比例多 10%，吃攻擊力的比例多 20%！
+    let skillLv = player.skillLevels.heal;
+    let healAmount = Math.floor(player.maxHp * (0.4 + skillLv * 0.1)) + Math.floor(player.atkRange[1] * (0.8 + skillLv * 0.2));
     
     // 🌟 2. 拔掉 Math.min 限制！允許血量突破天際！
     player.hp += healAmount; 
