@@ -157,3 +157,27 @@ button:hover { filter: brightness(1.2); }
 #reset-btn:hover {
     background-color: #7f8c8d;
 }
+
+#inventory-container {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.inventory-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #34495e;
+    margin-bottom: 5px;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.inventory-item button {
+    padding: 2px 8px;
+    font-size: 0.8em;
+    cursor: pointer;
+}
