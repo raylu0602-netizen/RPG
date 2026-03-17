@@ -69,20 +69,19 @@ function buyItem(item) {
         } else {
             addLog("❌ 金幣不足！");
         }
-    } else if (item === 'sword') {
-        if (player.coin >= 100) {
-            player.coin -= 100;
-            player.extraATK += 5; // 永久攻擊力提升
-            addLog("⚔️ 購買了鋒利長劍！你的攻擊力永久提升了！");
-            const display = document.getElementById('player-atk-display');
-            if(display) {
-                display.style.color = "#2ecc71"; 
-                setTimeout(() => { display.style.color = "#e74c3c"; }, 1000);
-            }
-        } else {
-            addLog("❌ 金幣不足！");
-        }
     } 
+    // 在 buyItem 函數裡修改 'sword' 的邏輯：
+    else if (item === 'sword') {
+        let currentCost = 100 + (player.extraATK * 10); // 這裡的公式要跟上面一模一樣
+
+        if (player.coin >= currentCost) {
+            player.coin -= currentCost;
+            player.extraATK += 5; 
+            addLog(`⚔️ 鐵匠為你強化了武器！攻擊力永久提升！ (花費 ${currentCost} 金幣)`);
+        } else {
+            addLog(`❌ 金幣不足！鐵匠說這次強化需要 ${currentCost} 金幣。`);
+        }
+    }
     else if (item === 'lightning_book') {
         if (player.coin >= 150) {
             player.coin -= 150;
@@ -137,7 +136,20 @@ function updateUI() {
     player.atkRange = calculateTotalAtk();
 
     // 更新介面數值
+    // 在 updateUI() 裡找到這段並替換：
     document.getElementById('player-hp').innerText = `${player.hp} / ${player.maxHp}`;
+    
+    const hpFill = document.getElementById('player-hp-fill');
+    if (player.hp > player.maxHp) {
+        // 過量護盾狀態
+        hpFill.style.width = "100%";
+        hpFill.style.backgroundColor = "#f1c40f"; // 金色
+        document.getElementById('player-hp').innerText = `🛡️ ${player.hp} / ${player.maxHp}`;
+    } else {
+        // 正常狀態
+        hpFill.style.width = (player.hp / player.maxHp * 100) + "%";
+        hpFill.style.backgroundColor = "#2ecc71"; // 恢復原本的綠色 (或紅色，看你原本 CSS 怎麼寫)
+    }
     document.getElementById('player-hp-fill').style.width = (player.hp / player.maxHp * 100) + "%";
     document.getElementById('player-level').innerText = player.level;
     document.getElementById('player-exp').innerText = `${player.exp} / ${player.nextLevelExp}`;
@@ -158,7 +170,13 @@ function updateUI() {
         const bonus = player.extraATK + ((player.equiptment.weapon) ? player.equiptment.weapon.atkBonus : 0);
         atkElement.innerText = `${player.baseAtk[0]} ~ ${player.baseAtk[1]} (總加成: +${bonus})`;
     }
-
+    // 放在 updateUI() 函數裡面
+    const swordPriceElement = document.getElementById('sword-price');
+    if (swordPriceElement) {
+        // 每次買長劍 extraATK 會 +5，所以這裡乘 10 的話，買一次會貴 50 金幣
+        let currentCost = 100 + (player.extraATK * 10); 
+        swordPriceElement.innerText = currentCost;
+    }
     // 更新技能按鈕
     const ltBtn = document.getElementById('lightning-btn');
     if (ltBtn) {
@@ -251,9 +269,17 @@ function checkLevelUp() {
         player.exp -= player.nextLevelExp;
         player.level++;
         player.maxHp += 20;
-        player.hp = player.maxHp; 
         
-        // ✅ 修正錯誤二：升級時必須增加 baseAtk，不能改 atkRange
+        // --- 🌟 護盾保護機制 ---
+        if (player.hp < player.maxHp) {
+            // 如果受傷了，升級幫你補滿血
+            player.hp = player.maxHp; 
+        } else {
+            // 如果你有護盾，不僅不扣除，還把升級增加的 20 點血量疊加上去！
+            player.hp += 20; 
+        }
+        // -------------------------
+
         player.baseAtk[0] += 2;
         player.baseAtk[1] += 4;
         
@@ -280,13 +306,21 @@ function explore() {
         currentMonster = { ...monsters[randomIndex] }; 
         currentMonster.atk = [...monsters[randomIndex].atk]; 
 
-        let multiplier = 1 + (player.level - 1) * 0.2;
-        currentMonster.maxHp = Math.floor(currentMonster.maxHp * multiplier);
+        let hpMultiplier = 1 + (player.level - 1) * 0.3 + Math.pow(2,player.level/5);
+        
+        // 攻擊力倍率稍微低一點點，避免小怪一拳把玩家打死
+        let atkMultiplier = 1 + (player.level - 1) * 0.25;
+
+        currentMonster.maxHp = Math.floor(currentMonster.maxHp * hpMultiplier);
         currentMonster.hp = currentMonster.maxHp; 
-        currentMonster.atk[0] = Math.floor(currentMonster.atk[0] * multiplier);
-        currentMonster.atk[1] = Math.floor(currentMonster.atk[1] * multiplier);
-        currentMonster.exp = Math.floor(currentMonster.exp * multiplier);
-        currentMonster.coin = Math.floor(currentMonster.coin * multiplier);
+        
+        currentMonster.atk[0] = Math.floor(currentMonster.atk[0] * atkMultiplier);
+        currentMonster.atk[1] = Math.floor(currentMonster.atk[1] * atkMultiplier);
+        
+        // 經驗值和金幣跟著血量倍率走，代表「怪物變難打，獎勵也變豐厚」！
+        currentMonster.exp = Math.floor(currentMonster.exp * hpMultiplier);
+        currentMonster.coin = Math.floor(currentMonster.coin * hpMultiplier);
+
         currentMonster.name = `Lv.${player.level} ${currentMonster.name}`;
 
         addLog(`⚠️ 警告！你遭遇了 <b>${currentMonster.name}</b>！`);
@@ -309,12 +343,16 @@ function spawnBoss() {
     currentMonster = { ...bossTemplate };
     currentMonster.atk = [...bossTemplate.atk];
     
-    let bossMultiplier = 1 + (player.level - 1) * 0.3; 
+    let bossMultiplier = 1 + (player.level - 1) * 0.3 + Math.pow(2.2,player.level/5); 
+
     currentMonster.maxHp = Math.floor(currentMonster.maxHp * bossMultiplier);
     currentMonster.hp = currentMonster.maxHp;
-    currentMonster.atk[0] = Math.floor(currentMonster.atk[0] * bossMultiplier);
-    currentMonster.atk[1] = Math.floor(currentMonster.atk[1] * bossMultiplier);
-    currentMonster.exp = Math.floor(currentMonster.exp * bossMultiplier);
+
+    // 攻擊力不用指數成長，不然玩家會被秒殺，保持線性或稍微調高就好
+    let atkMultiplier = 1 + (player.level - 1) * 0.35;
+    currentMonster.atk[0] = Math.floor(currentMonster.atk[0] * atkMultiplier);
+    currentMonster.atk[1] = Math.floor(currentMonster.atk[1] * atkMultiplier);
+    currentMonster.exp = Math.floor(currentMonster.exp * atkMultiplier);
     currentMonster.coin = Math.floor(currentMonster.coin * bossMultiplier);
     currentMonster.name = `💀 領域領主：${currentMonster.name} (Lv.${player.level})`;
 
@@ -367,16 +405,34 @@ function useLightning() {
     checkBattle(); 
 }
 
+// --- 🌿 進階治癒術：神聖新星 ---
+// --- 🌿 終極治癒術：過量護盾 ---
 function useHeal() {
     if (!currentMonster || player.skills.healCD > 0) return;
 
-    let healAmount = Math.floor(player.maxHp * 0.4);
-    player.hp = Math.min(player.hp + healAmount, player.maxHp);
-    player.skills.healCD = 6; 
+    // 1. 治癒量狂飆：吃你那超高的攻擊力加成！
+    let healAmount = Math.floor(player.maxHp * 0.5) + player.atkRange[1];
+    
+    // 🌟 2. 拔掉 Math.min 限制！允許血量突破天際！
+    player.hp += healAmount; 
+    
+    player.skills.healCD = 5; 
 
-    addLog(`🌿 <b style="color:#2ecc71;">治癒術！</b> 恢復了 <b style="color:#2ecc71;">${healAmount}</b> 點生命值！`);
+    addLog(`🌿 <b style="color:#2ecc71;">大治癒術！</b> 溢出的生命力化為護盾，獲得 <b style="color:#2ecc71;">${healAmount}</b> 點生命！`);
+
+    // 3. 怪物反擊
     monsterTurn(); 
     updateUI();
+
+    // 🌟 4. 視覺特效：如果血量超過上限，把血條變成「金色護盾」
+    const hpFill = document.getElementById('player-hp-fill');
+    if (player.hp > player.maxHp && hpFill) {
+        hpFill.style.backgroundColor = "#f1c40f"; // 金色
+        hpFill.style.width = "100%"; // 保持滿格
+        
+        // 讓文字顯示成 3000 / 300 這種超狂數字
+        document.getElementById('player-hp').innerText = `🛡️ ${player.hp} / ${player.maxHp}`;
+    }
 }
 
 function checkBattle() {
@@ -435,13 +491,15 @@ function renderInventory() {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'inventory-item';
         
-        let color = "#fff";
+        let color = "#f5f3f3";
         if(item.rarity === 'Uncommon') color = "#1abc9c";
         if(item.rarity === 'Epic') color = "#9b59b6";
-
         itemDiv.innerHTML = `
             <span style="color: ${color}">${item.name} (ATK +${item.atkBonus})</span>
-            <button onclick="equipItem(${index})">裝備</button>
+            <div>
+                <button class="btn-equip" onclick="equipItem(${index})">裝備</button>
+                <button class="btn-dismantle" onclick="dismantleItem(${index})">分解</button>
+            </div>
         `;
         listElement.appendChild(itemDiv);
     });
@@ -536,7 +594,34 @@ function revive() {
     updateUI(); // 🌟 重大提醒：務必先更新 UI 重算攻擊力
     saveGame(); // 🌟 然後再存檔
 }
+// --- 🔨 裝備分解系統 ---
+function dismantleItem(index) {
+    const item = player.inventory[index];
+    if (!item) return;
 
+    // 1. 為了安全，如果玩家分解的是「正在穿」的武器，就自動幫他脫下來
+    if (player.equiptment.weapon === item) {
+        player.equiptment.weapon = null;
+        addLog("⚠️ 你分解了手中正在裝備的武器！");
+    }
+
+    // 2. 根據裝備的稀有度，決定給予多少永久強化值
+    let upgradeValue = 1; // 預設 Common 給 1 點
+    if (item.rarity === 'Uncommon') upgradeValue = 3;
+    if (item.rarity === 'Epic') upgradeValue = 10;
+
+    // 3. 增加永久攻擊力
+    player.extraATK += upgradeValue; 
+
+    // 4. 從背包陣列中把這個物品「剔除」(splice 代表刪除陣列中特定位置的元素)
+    player.inventory.splice(index, 1); 
+
+    addLog(`🔨 <b style="color:#e67e22;">分解成功！</b> 【${item.name}】化為純粹的力量，永久攻擊力 +${upgradeValue}！`);
+
+    // 5. 更新畫面與存檔
+    updateUI();
+    saveGame();
+}
 function deleteSave() {
     if (confirm("確定要刪除所有冒險進度嗎？這無法還原！")) {
         localStorage.removeItem('myRpgSave');
