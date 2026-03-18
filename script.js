@@ -19,13 +19,38 @@ let player = {
     },
     baseAtk: [5, 12],
     extraATK: 0, 
-    baseMaxHp: 100
+    baseMaxHp: 100,
+    currentArea: 0
 };
 
-const monsters = [
-    { name: "綠色史萊姆", hp: 30, maxHp: 30, image: "images/slime.png", atk: [3, 6], exp: 25, coin: 10 },
-    { name: "森林哥布林", hp: 55, maxHp: 55, image: "images/goblin.jpg", atk: [6, 12], exp: 50, coin: 20 },
-    { name: "地獄小惡魔", hp: 90, maxHp: 90, image: "images/imp.png", atk: [12, 18], exp: 100, coin: 40 }
+// --- 🗺️ 世界地圖與怪物設定 ---
+const areas = [
+    {
+        id: 0,
+        name: "幽暗森林",
+        reqLevel: 1, // 進入需求等級
+        monsters: [
+            { name: "綠色史萊姆", hp: 30, maxHp: 30, image: "images/slime.png", atk: [3, 6], exp: 25, coin: 10 },
+            { name: "森林哥布林", hp: 55, maxHp: 55, image: "images/goblin.jpg", atk: [6, 12], exp: 50, coin: 20 },
+            { name: "地獄小惡魔", hp: 90, maxHp: 90, image: "images/imp.png", atk: [12, 18], exp: 100, coin: 40 }
+        ],
+        boss: {
+            name: "深淵魔龍", hp: 150, maxHp: 150, image: "images/boss.jpg", atk: [15, 25], exp: 200, coin: 100, isBoss: true 
+        }
+    },
+    {
+        id: 1,
+        name: "烈焰火山",
+        reqLevel: 10, // 🌟 10 級才能解鎖！
+        monsters: [
+            { name: "熔岩犬", hp: 200, maxHp: 200, image: "images/hound.png", atk: [20, 35], exp: 150, coin: 80 },
+            { name: "火焰精靈", hp: 150, maxHp: 150, image: "images/fire_spirit.png", atk: [30, 45], exp: 120, coin: 60 },
+            { name: "火山岩怪", hp: 350, maxHp: 350, image: "images/golem.png", atk: [15, 25], exp: 200, coin: 100 }
+        ],
+        boss: {
+            name: "灰燼鳳凰", hp: 800, maxHp: 800, image: "images/fire_boss.png", atk: [40, 60], exp: 500, coin: 300, isBoss: true 
+        }
+    }
 ];
 
 const items = {
@@ -40,15 +65,7 @@ const items = {
     ]
 };
 
-// --- 魔王設定 ---
-const bossTemplate = {
-    name: "深淵魔龍", 
-    hp: 150, maxHp: 150, 
-    image: "images/boss.jpg", 
-    atk: [15, 25], 
-    exp: 200, coin: 100,
-    isBoss: true 
-};
+
 
 let currentMonster = null;
 
@@ -172,6 +189,7 @@ function updateUI() {
     if (!player.skillLevels) {
         player.skillLevels = { fireball: 1, lightning: 1, heal: 1 };
     }
+    if (player.currentArea === undefined) player.currentArea = 0;
     // 重新計算當前總戰鬥力
     player.atkRange = calculateTotalAtk();
 
@@ -251,7 +269,7 @@ function updateUI() {
             let costHl = 250 + (player.skillLevels.heal * 150);
             document.getElementById('heal-upg-text').innerText = `🌿 升級治癒術 Lv.${player.skillLevels.heal} (${costHl}g)`;
         }
-}
+    }
     const hlBtn = document.getElementById('heal-btn');
     if (hlBtn) {
         const isHlUnlocked = player.unlockedSkills.heal;
@@ -299,6 +317,7 @@ function updateUI() {
     }
     
     renderInventory();
+    renderAreaSelector();
 }
 
 function addLog(msg) {
@@ -347,7 +366,7 @@ function checkLevelUp() {
         player.baseAtk[0] += 2;
         player.baseAtk[1] += 4;
         
-        player.nextLevelExp = Math.floor(player.nextLevelExp * 1.5);
+        player.nextLevelExp = Math.floor(player.nextLevelExp * 1.2);
         
         addLog(`<b style="color: #f1c40f;">✨ 恭喜升級！目前等級：LV.${player.level}</b>`);
         checkLevelUp(); 
@@ -366,11 +385,12 @@ function explore() {
     addLog("🌲 你進入了危險區域探險...");
     
     if (Math.random() < 0.8) {
-        const randomIndex = Math.floor(Math.random() * monsters.length);
-        currentMonster = { ...monsters[randomIndex] }; 
-        currentMonster.atk = [...monsters[randomIndex].atk]; 
+        const currentAreaMonsters = areas[player.currentArea].monsters;
+        const randomIndex = Math.floor(Math.random() * currentAreaMonsters.length);
+        currentMonster = { ...currentAreaMonsters[randomIndex] }; 
+        currentMonster.atk = [...currentAreaMonsters[randomIndex].atk];
 
-        let hpMultiplier = 1 + (player.level - 1) * 0.3 + Math.pow(2,player.level/5);
+        let hpMultiplier = 1 + (player.level - 1) * 0.3 + Math.pow(player.level/5,2);
         
         // 攻擊力倍率稍微低一點點，避免小怪一拳把玩家打死
         let atkMultiplier = 1 + (player.level - 1) * 0.25;
@@ -404,8 +424,9 @@ function explore() {
 function spawnBoss() {
     addLog("<b style='color: red; font-size: 1.2em;'>🚨 警告！你驚動了強大的領域領主！ 🚨</b>");
     
-    currentMonster = { ...bossTemplate };
-    currentMonster.atk = [...bossTemplate.atk];
+    const currentAreaBoss = areas[player.currentArea].boss;
+    currentMonster = { ...currentAreaBoss };
+    currentMonster.atk = [...currentAreaBoss.atk];
     
     let bossMultiplier = 1 + (player.level - 1) * 0.3 + Math.pow(2.2,player.level/5); 
 
@@ -413,7 +434,7 @@ function spawnBoss() {
     currentMonster.hp = currentMonster.maxHp;
 
     // 攻擊力不用指數成長，不然玩家會被秒殺，保持線性或稍微調高就好
-    let atkMultiplier = 1 + (player.level - 1) * 0.35;
+    let atkMultiplier = 1 + (player.level - 1) * 0.5;
     currentMonster.atk[0] = Math.floor(currentMonster.atk[0] * atkMultiplier);
     currentMonster.atk[1] = Math.floor(currentMonster.atk[1] * atkMultiplier);
     currentMonster.exp = Math.floor(currentMonster.exp * atkMultiplier);
@@ -488,7 +509,7 @@ function useHeal() {
     player.skills.healCD = 5; 
 
     addLog(`🌿 <b style="color:#2ecc71;">大治癒術！</b> 溢出的生命力化為護盾，獲得 <b style="color:#2ecc71;">${healAmount}</b> 點生命！`);
-
+    reduceCooldowns() 
     // 3. 怪物反擊
     monsterTurn(); 
     updateUI();
@@ -593,7 +614,39 @@ function reduceCooldowns() {
     if (player.skills.lightningCD > 0) player.skills.lightningCD--;
     if (player.skills.healCD > 0) player.skills.healCD--;
 }
+// 渲染地圖選單 (只有達到等級要求才會顯示該區域)
+function renderAreaSelector() {
+    const container = document.getElementById('area-selector-container');
+    const select = document.getElementById('area-select');
+    if (!container || !select) return;
 
+    // 如果玩家達到 10 級，才顯示切換地圖的介面
+    if (player.level >= 10) {
+        container.style.display = 'block';
+        select.innerHTML = ''; // 先清空
+
+        areas.forEach((area, index) => {
+            if (player.level >= area.reqLevel) {
+                const option = document.createElement('option');
+                option.value = index;
+                option.innerText = `${area.name} (Lv.${area.reqLevel}+)`;
+                if (player.currentArea === index) option.selected = true;
+                select.appendChild(option);
+            }
+        });
+    } else {
+        container.style.display = 'none';
+    }
+}
+
+// 玩家切換選單時觸發
+function changeArea() {
+    const select = document.getElementById('area-select');
+    player.currentArea = parseInt(select.value);
+    addLog(`🗺️ 你收拾行囊，前往了新的區域：<b style="color:#3498db;">${areas[player.currentArea].name}</b>！`);
+    saveGame();
+    updateUI();
+}
 function monsterTurn() {
     let dmg = Math.floor(Math.random() * (currentMonster.atk[1] - currentMonster.atk[0])) + currentMonster.atk[0];
     player.hp -= dmg;

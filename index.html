@@ -66,7 +66,12 @@
                     <button id="reset-btn" onclick="resetGame()">🔄 重置</button>
                     <button onclick="deleteSave()" class="btn-danger">🗑️ 刪存</button>
                 </div>
+                <div id="area-selector-container" style="display: none; margin-bottom: 15px;">
+                    <label for="area-select" style="font-weight: bold; color: #fff;">🗺️ 當前區域：</label>
+                    <select id="area-select" onchange="changeArea()" style="padding: 5px; font-size: 16px;"></select>
+                </div>
             </div>
+            
 
             <div id="log">
                 <p class="system-msg">系統：遊戲已就緒，請冒險者出發。</p>
