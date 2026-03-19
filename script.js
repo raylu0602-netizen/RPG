@@ -4,9 +4,9 @@ let player = {
     
     // --- 技能相關 ---
     skills: { fireballCD: 0, lightningCD: 0, healCD: 0 },
-    unlockedSkills: { fireball: true, lightning: false, heal: false }, 
-    skillLevels: { fireball: 1, lightning: 1, heal: 1 }, 
-    
+    unlockedSkills: { fireball: true, lightning: false, heal: false ,windWalk: false }, 
+    skillLevels: { fireball: 1, lightning: 1, heal: 1 ,windWalk: 1}, 
+    windWalkActive: false,
     bossDefeatedLevel: 0,
     protectionAmulet: 0, 
     expAmulet: 0,
@@ -31,12 +31,12 @@ const areas = [
         name: "幽暗森林",
         reqLevel: 1, // 進入需求等級
         monsters: [
-            { name: "綠色史萊姆", hp: 20, maxHp: 20, image: "images/slime.png", atk: [3, 6], def: 1,exp: 25, coin: 20 },
-            { name: "森林哥布林", hp: 40, maxHp: 40, image: "images/goblin.jpg", atk: [6, 12], def: 2,exp: 50, coin: 35 },
-            { name: "地獄小惡魔", hp: 60, maxHp: 60, image: "images/imp.png", atk: [12, 18], def: 5,exp: 75, coin: 50 }
+            { name: "綠色史萊姆", hp: 20, maxHp: 20, image: "images/slime.png", atk: [3, 6], def: 1,exp: 25, coin: 25 },
+            { name: "森林哥布林", hp: 40, maxHp: 40, image: "images/goblin.jpg", atk: [6, 12], def: 2,exp: 50, coin: 50 },
+            { name: "地獄小惡魔", hp: 60, maxHp: 60, image: "images/imp.png", atk: [12, 18], def: 5,exp: 75, coin: 75 }
         ],
         boss: {
-            name: "深淵魔龍", hp: 160, maxHp: 160, image: "images/boss.jpg", atk: [15, 25], def: 10,exp: 200, coin: 100, isBoss: true 
+            name: "深淵魔龍", hp: 160, maxHp: 160, image: "images/boss.jpg", atk: [15, 25], def: 10,exp: 150, coin: 150, isBoss: true 
         }
     },
     {
@@ -44,12 +44,12 @@ const areas = [
         name: "烈焰火山",
         reqLevel: 10, // 🌟 10 級才能解鎖！
         monsters: [
-            { name: "熔岩犬", hp: 120, maxHp: 120, image: "images/hound.png", atk: [20, 35], def: 5,exp: 180, coin: 100 },
-            { name: "火焰精靈", hp: 60, maxHp: 60, image: "images/fire_spirit.png", atk: [30, 45], def: 0,exp: 130, coin: 80 },
-            { name: "火山岩怪", hp: 180, maxHp: 180, image: "images/golem.png", atk: [15, 25], def: 10,exp: 230, coin: 150 }
+            { name: "熔岩犬", hp: 120, maxHp: 120, image: "images/hound.png", atk: [20, 35], def: 5,exp: 150, coin: 130 },
+            { name: "火焰精靈", hp: 60, maxHp: 60, image: "images/fire_spirit.png", atk: [30, 45], def: 0,exp: 100, coin: 100 },
+            { name: "火山岩怪", hp: 180, maxHp: 180, image: "images/golem.png", atk: [15, 25], def: 10,exp: 200, coin: 180 }
         ],
         boss: {
-            name: "灰燼鳳凰", hp: 400, maxHp: 400, image: "images/fire_boss.png", atk: [40, 60], def: 20,exp: 400, coin: 400, isBoss: true 
+            name: "灰燼鳳凰", hp: 400, maxHp: 400, image: "images/fire_boss.png", atk: [40, 60], def: 20,exp: 350, coin: 450, isBoss: true 
         }
     }
 ];
@@ -289,6 +289,48 @@ function buyItem(item) {
             addLog(`❌ 金幣不足，連買 1 個金幣護符都不夠！`);
         }
     }
+    // 加在 buyItem 裡面其他的 else if 後面
+    else if (item === 'windWalk_book') {
+        if (player.coin >= 500) {
+            player.coin -= 500;
+            player.unlockedSkills.windWalk = true;
+            addLog("📘 <b style='color:#1abc9c;'>你翻開了青色的技能書，學會了新技能：【🌪️ 風行】！</b>");
+        } else {
+            addLog("❌ 金幣不足！");
+        }
+    }
+    else if (item === 'upgrade_windWalk') {
+        let cost = 500 + (player.skillLevels.windWalk * 300);
+        if (player.coin >= cost) {
+            player.coin -= cost;
+            player.skillLevels.windWalk++;
+            addLog(`🌪️ 花費 ${cost} 金幣，【風行】升級到了 <b style="color:#1abc9c;">Lv.${player.skillLevels.windWalk}</b>！連擊的強化倍率提升！`);
+        } else {
+            addLog(`❌ 金幣不足，升級風行需要 ${cost} 金幣。`);
+        }
+    }
+    else if (item === 'max_upgrade_windWalk') {
+        let totalCost = 0;
+        let levelsGained = 0;
+        let currentLv = player.skillLevels.windWalk;
+        
+        while (true) {
+            let nextCost = 500 + ((currentLv + levelsGained) * 300);
+            if (player.coin >= totalCost + nextCost) {
+                totalCost += nextCost;
+                levelsGained++;
+            } else {
+                break;
+            }
+        }
+        if (levelsGained > 0) {
+            player.coin -= totalCost;
+            player.skillLevels.windWalk += levelsGained;
+            addLog(`🌪️ 豪擲了 ${totalCost} 金幣，【風行】一口氣提升了 ${levelsGained} 級，達到 <b style="color:#1abc9c;">Lv.${player.skillLevels.windWalk}</b>！`);
+        } else {
+            addLog(`❌ 金幣不足，連升 1 級都不夠！`);
+        }
+    }
     saveGame(); 
     updateUI(); 
 }
@@ -300,7 +342,6 @@ function calculateTotalAtk() {
     return [totalMin, totalMax];
 }
 
-// --- 🎲 裝備掉落與機率判定 ---
 // --- 🎲 裝備掉落與機率判定 ---
 function rollLoot() {
     let roll = Math.random(); 
@@ -353,7 +394,15 @@ function updateUI() {
     if (player.goldAmulet === undefined) player.goldAmulet = 0; 
     if (player.baseDef === undefined) player.baseDef = 0;
     if (player.extraDEF === undefined) player.extraDEF = 0;
+    
+    // 🌟🌟🌟 新增：針對「風行」技能的舊存檔保護機制 🌟🌟🌟
+    if (player.skills.windWalkCD === undefined) player.skills.windWalkCD = 0;
+    if (player.unlockedSkills.windWalk === undefined) player.unlockedSkills.windWalk = false;
+    if (player.skillLevels.windWalk === undefined) player.skillLevels.windWalk = 1;
+    if (player.windWalkActive === undefined) player.windWalkActive = false;
+    // 🌟🌟🌟 新增結束 🌟🌟🌟
 
+    if (player.currentArea === undefined) player.currentArea = 0;
     player.atkRange = calculateTotalAtk();
 // 🌟 在 updateUI() 裡面找到這段並替換：
     let armorBonus = (player.equiptment && player.equiptment.armor) ? player.equiptment.armor.defBonus : 0;
@@ -364,7 +413,7 @@ function updateUI() {
     let defReductionElement = document.getElementById('def-reduction');
     if (playerDefElement && defReductionElement) {
         playerDefElement.innerText = totalDEF;
-        let reductionPercent = (1 - (100 / (100 + totalDEF))) * 100;
+        let reductionPercent = (1 - (1000 / (1000 + totalDEF))) * 100;
         defReductionElement.innerText = `(減傷 ${reductionPercent.toFixed(1)}%)`;
     }
 
@@ -512,6 +561,28 @@ function updateUI() {
             eqArmorElem.innerHTML = `<span style="color: #7f8c8d;">(未裝備)</span>`;
         }
     }
+    // 放在 updateUI 處理技能按鈕的地方
+    const windBtn = document.getElementById('wind-btn');
+    if (windBtn) {
+        const isWindUnlocked = player.unlockedSkills.windWalk;
+        windBtn.style.display = isWindUnlocked ? 'inline-block' : 'none';
+        if (isWindUnlocked) {
+            windBtn.disabled = player.skills.windWalkCD > 0 || player.windWalkActive;
+            let activeText = player.windWalkActive ? " (啟動中)" : "";
+            windBtn.innerText = player.skills.windWalkCD > 0 ? `🌪️ CD ${player.skills.windWalkCD}` : `🌪️ 風行${activeText}`;
+            windBtn.style.backgroundColor = player.windWalkActive ? "#16a085" : ""; // 啟動時改變顏色
+        }
+    }
+
+    const shopWind = document.getElementById('shop-windWalk');
+    if (shopWind) shopWind.style.display = player.unlockedSkills.windWalk ? 'none' : 'flex';
+    
+    const upgWind = document.getElementById('shop-upg-windWalk');
+    if (upgWind) {
+        upgWind.style.display = player.unlockedSkills.windWalk ? 'flex' : 'none';
+        let costWind = 500 + (player.skillLevels.windWalk * 300);
+        document.getElementById('windWalk-upg-text').innerText = `🌪️ 升級風行 Lv.${player.skillLevels.windWalk} (${costWind}g)`;
+    }
     renderInventory();
     renderAreaSelector();
 }
@@ -584,6 +655,10 @@ function explore() {
         let hpMultiplier = 1 + (player.level - 1) * 0.3 + Math.pow(player.level/5,2);
         let expMultiplier = Math.pow(1.1, player.level - 1);
         let atkMultiplier = 1 + (player.level - 1) * 0.25;
+        if(player.level>100) {
+            atkMultiplier = 5 + Math.pow(player.level - 20, 0.5) * 0.1;
+            expMultiplier *= Math.pow(1.2, player.level - 100);
+            }
         let defMultiplier =  Math.pow(1.1, player.level - 1);
         currentMonster.maxHp = Math.floor(currentMonster.maxHp * hpMultiplier);
         currentMonster.hp = currentMonster.maxHp; 
@@ -621,15 +696,19 @@ function spawnBoss() {
     const currentAreaBoss = areas[player.currentArea].boss;
     currentMonster = { ...currentAreaBoss };
     currentMonster.atk = [...currentAreaBoss.atk];
-    
+    let bossexpMultiplier=Math.pow(1.15, player.level - 1);
     let bossMultiplier = Math.pow(2.2,player.level/5); 
-    let bossexpMultiplier = Math.pow(1.3, player.level - 1);
+    let atkMultiplier = 1 + (player.level - 1) * 0.5;
+    if(player.level>100) {
+        bossexpMultiplier = Math.pow(1.15, 100)*Math.pow(1.2, player.level - 100);
+        atkMultiplier *= Math.pow(1.1, player.level-100) ;
+    }
     let defMultiplier =  Math.pow(2, player.level /5);
     currentMonster.maxHp = Math.floor(currentMonster.maxHp * bossMultiplier);
     currentMonster.hp = currentMonster.maxHp;
     currentMonster.def = Math.floor((currentMonster.def || 0) * defMultiplier);
     
-    let atkMultiplier = 1 + (player.level - 1) * 0.5;
+
     currentMonster.atk[0] = Math.floor(currentMonster.atk[0] * atkMultiplier);
     currentMonster.atk[1] = Math.floor(currentMonster.atk[1] * atkMultiplier);
     let expBonusRate = 1 + ((player.expAmulet || 0) * 0.1);
@@ -650,40 +729,83 @@ function spawnBoss() {
 function attack() {
     if (!currentMonster || player.hp <= 0) return;
     sounds.attack.currentTime = 0;
-    sounds.attack.play().catch(e => console.log("等待點擊觸發音效"));
+    sounds.attack.play().catch(e => console.log("音效未觸發"));
 
     let rawDmg = Math.floor(Math.random() * (player.atkRange[1] - player.atkRange[0] + 1)) + player.atkRange[0];
     
-    // 怪物防禦減傷計算
+    // 🌟 風行判定邏輯
+    let hits = 1;
+    let windMultiplier = 1;
+    if (player.windWalkActive) {
+        hits = 2;
+        // 強化倍率：技能等級越高，第二下的傷害越誇張 (1 + 等級*0.5)
+        windMultiplier = 1 + (player.skillLevels.windWalk * 0.5); 
+        player.windWalkActive = false; // 消耗狀態
+    }
+
     let monsterDef = currentMonster.def || 0;
-    let dmgMultiplier = 100 / (100 + monsterDef);
-    let finalDmg = Math.max(1, Math.floor(rawDmg * dmgMultiplier));
+    let dmgMultiplier = 1000 / (1000 + monsterDef);
     
-    currentMonster.hp -= finalDmg;
-    addLog(`⚔️ 你攻擊了，造成 ${finalDmg} 點傷害。(被抵擋了 ${rawDmg - finalDmg} 點)`);
+    let totalFinalDmg = 0;
+    let totalBlocked = 0;
+
+    // 執行連擊迴圈
+    for(let i=0; i<hits; i++) {
+        let currentRaw = i === 1 ? Math.floor(rawDmg * windMultiplier) : rawDmg;
+        let currentFinal = Math.max(1, Math.floor(currentRaw * dmgMultiplier));
+        currentMonster.hp -= currentFinal;
+        totalFinalDmg += currentFinal;
+        totalBlocked += (currentRaw - currentFinal);
+    }
+    
+    if (hits === 2) {
+        addLog(`🌪️ <b style="color:#1abc9c;">【風行連斬】</b> ⚔️ 普攻化作殘影連續打擊！造成 <b style="color:#e74c3c;">${totalFinalDmg}</b> 總傷害！(抵擋 ${totalBlocked} 點)`);
+    } else {
+        addLog(`⚔️ 你攻擊了，造成 ${totalFinalDmg} 點傷害。(被抵擋了 ${totalBlocked} 點)`);
+    }
     checkBattle();
 }
 
 function useFireball() {
     if (!currentMonster || player.skills.fireballCD > 0) return;
-    if (sounds.fireball) {
-        sounds.fireball.currentTime = 0;
-        sounds.fireball.play().catch(e => {});
-    }
+    if (sounds.fireball) { sounds.fireball.currentTime = 0; sounds.fireball.play().catch(e => {}); }
 
     let baseDmg = Math.floor(Math.random() * (player.atkRange[1] - player.atkRange[0] + 1)) + player.atkRange[0];
     let skillLv = player.skillLevels.fireball;
-    let rawDmg = Math.floor(baseDmg * (1.0 + skillLv * 1)) + (skillLv * 10);
+    let rawDmg = Math.floor(baseDmg * (1.5 + (skillLv-1) * 1)) + (skillLv * 70);
     
-    // 怪物防禦減傷計算
+    // 🌟 風行判定邏輯
+    let hits = 1;
+    let windMultiplier = 1;
+    if (player.windWalkActive) {
+        hits = 2;
+        windMultiplier = 1 + (player.skillLevels.windWalk * 0.5);
+        player.windWalkActive = false;
+    }
+
     let monsterDef = currentMonster.def || 0;
-    let dmgMultiplier = 100 / (100 + monsterDef);
-    let finalDmg = Math.max(1, Math.floor(rawDmg * dmgMultiplier));
+    let dmgMultiplier = 1000 / (1000 + monsterDef);
     
-    currentMonster.hp -= finalDmg;
+    let totalFinalDmg = 0;
+    let totalBlocked = 0;
+
+    for(let i=0; i<hits; i++) {
+        let currentRaw = i === 1 ? Math.floor(rawDmg * windMultiplier) : rawDmg;
+        let currentFinal = Math.max(1, Math.floor(currentRaw * dmgMultiplier));
+        currentMonster.hp -= currentFinal;
+        totalFinalDmg += currentFinal;
+        totalBlocked += (currentRaw - currentFinal);
+    }
+    currentMonster.burnDuration = 3; // 持續 3 回合
+    // 燃燒傷害：2% 最大血量 (對付高血量魔王神技) + 技能等級的固定傷害
+    currentMonster.burnDmg = Math.floor(currentMonster.maxHp * (0.01+(skillLv * 0.01)))
     player.skills.fireballCD = 4;
     
-    addLog(`🔥 <b style="color:#e67e22;">火球術！</b> 造成了驚人的 <b style="color:#e74c3c; font-size:1.1em;">${finalDmg}</b> 點傷害！(被抵擋了 ${rawDmg - finalDmg} 點)`);
+    if (hits === 2) {
+        addLog(`🌪️ <b style="color:#1abc9c;">【風行雙星】</b> 🔥 兩顆火球接連轟炸！造成驚人的 <b style="color:#e74c3c; font-size:1.1em;">${totalFinalDmg}</b> 總傷害！(抵擋 ${totalBlocked} 點)`);
+    } else {
+        addLog(`🔥 <b style="color:#e67e22;">火球術！</b> 造成了驚人的 <b style="color:#e74c3c; font-size:1.1em;">${totalFinalDmg}</b> 點傷害！(被抵擋了 ${totalBlocked} 點)`);
+    }
     checkBattle();
 }
 
@@ -691,26 +813,70 @@ function useLightning() {
     if (!currentMonster || player.skills.lightningCD > 0) return;
 
     let skillLv = player.skillLevels.lightning;
-    // 原始傷害直接就是最終傷害，不管怪物防禦有多高！
-    let trueDmg = Math.floor(player.atkRange[1] * (1.5 + skillLv * 1.0)) + (skillLv * 20);
+    let trueDmg = Math.floor(player.atkRange[1] * (2.5 + (skillLv-1) * 2.0)) + Math.floor(Math.pow(1.1,skillLv ) * 100);
     
-    currentMonster.hp -= trueDmg;
+    // 🌟 風行判定邏輯
+    let hits = 1;
+    let windMultiplier = 1;
+    if (player.windWalkActive) {
+        hits = 2;
+        windMultiplier = 1 + (player.skillLevels.windWalk * 0.5);
+        player.windWalkActive = false;
+    }
+
+    let totalFinalDmg = 0;
+    for(let i=0; i<hits; i++) {
+        let currentFinal = i === 1 ? Math.floor(trueDmg * windMultiplier) : trueDmg;
+        currentMonster.hp -= currentFinal;
+        totalFinalDmg += currentFinal;
+    }
+
     player.skills.lightningCD = 5; 
 
-    // 加上【無視防禦】的霸氣標籤！
-    addLog(`⚡ <b style="color:#9b59b6;">閃電斬！</b> <span style="background-color: #f1c40f; color: black; padding: 0 4px; border-radius: 3px; font-weight: bold;">無視防禦</span> 對敵人造成了 <b style="color:#e74c3c;">${trueDmg}</b> 點真實傷害！`);
+    if (hits === 2) {
+        addLog(`🌪️ <b style="color:#1abc9c;">【風行神雷】</b> ⚡ 天雷降下兩次制裁！<span style="background-color: #f1c40f; color: black; padding: 0 4px; border-radius: 3px; font-weight: bold;">無視防禦</span> 劈出 <b style="color:#e74c3c; font-size:1.2em;">${totalFinalDmg}</b> 點真實總傷害！`);
+    } else {
+        addLog(`⚡ <b style="color:#9b59b6;">閃電斬！</b> <span style="background-color: #f1c40f; color: black; padding: 0 4px; border-radius: 3px; font-weight: bold;">無視防禦</span> 對敵人造成了 <b style="color:#e74c3c;">${totalFinalDmg}</b> 點真實傷害！`);
+    }
     checkBattle(); 
+}
+function useWindWalk() {
+    if (!currentMonster || player.skills.windWalkCD > 0 || player.windWalkActive) return;
+
+    player.windWalkActive = true;
+    player.skills.windWalkCD = 6; // 冷卻 6 回合
+
+    addLog(`🌪️ <b style="color:#1abc9c; font-size:1.1em;">風行啟動！</b> 風之精靈環繞著你，你的下一次行動將會被<b style="color:#f1c40f;">複製並大幅強化</b>！`);
+
+    // 放 Buff 算一回合，怪物會趁機打你
+    reduceCooldowns();
+    monsterTurn();
+    updateUI();
 }
 
 function monsterTurn() {
+    // 🌟🌟🌟 結算狀態異常 (在怪物攻擊前結算) 🌟🌟🌟
+    if (currentMonster.burnDuration && currentMonster.burnDuration > 0) {
+        currentMonster.hp -= currentMonster.burnDmg;
+        currentMonster.burnDuration--;
+        
+        addLog(`🔥 <b style="color:#e67e22;">燃燒發作！</b> ${currentMonster.name} 受到 <b style="color:#e74c3c;">${currentMonster.burnDmg}</b> 點灼燒傷害！(剩餘 ${currentMonster.burnDuration} 回合)`);
+
+        // 如果怪物被燒死了，直接結算戰鬥並「中斷」怪物的攻擊！
+        if (currentMonster.hp <= 0) {
+            checkBattle();
+            return; // 🌟 關鍵：直接 return 結束函數，怪物就無法反擊了
+        }
+    }
+    // 🌟🌟🌟 狀態異常結算結束 🌟🌟🌟
+
+    // 原本的怪物反擊邏輯
     let rawDmg = Math.floor(Math.random() * (currentMonster.atk[1] - currentMonster.atk[0])) + currentMonster.atk[0];
     
-    // 🌟 修正：把「裝備的防禦力」也確實讀取進來！
     let armorBonus = (player.equiptment && player.equiptment.armor) ? player.equiptment.armor.defBonus : 0;
     let totalDEF = (player.baseDef || 0) + (player.extraDEF || 0) + armorBonus;
     
-    // 玩家防禦減傷計算
-    let dmgMultiplier = 100 / (100 + totalDEF);
+    let dmgMultiplier = 1000 / (1000 + totalDEF);
     let finalDmg = Math.max(1, Math.floor(rawDmg * dmgMultiplier));
 
     player.hp -= finalDmg;
@@ -737,11 +903,31 @@ function useHeal() {
     let skillLv = player.skillLevels.heal;
     let healAmount = Math.floor(player.maxHp * (0.4 + skillLv * 0.1)) + Math.floor(player.atkRange[1] * (0.8 + skillLv * 0.2));
     
-    player.hp += healAmount; 
+    // 🌟 風行判定邏輯 (治癒也能連擊！)
+    let hits = 1;
+    let windMultiplier = 1;
+    if (player.windWalkActive) {
+        hits = 2;
+        windMultiplier = 1 + (player.skillLevels.windWalk * 0.5);
+        player.windWalkActive = false;
+    }
+
+    let totalHeal = 0;
+    for(let i=0; i<hits; i++) {
+        let currentHeal = i === 1 ? Math.floor(healAmount * windMultiplier) : healAmount;
+        player.hp += currentHeal;
+        totalHeal += currentHeal;
+    }
+
     player.skills.healCD = 5; 
 
-    addLog(`🌿 <b style="color:#2ecc71;">大治癒術！</b> 溢出的生命力化為護盾，獲得 <b style="color:#2ecc71;">${healAmount}</b> 點生命！`);
-    reduceCooldowns() 
+    if (hits === 2) {
+        addLog(`🌪️ <b style="color:#1abc9c;">【風行共鳴】</b> 🌿 生命魔力兩次綻放！獲得 <b style="color:#2ecc71; font-size:1.1em;">${totalHeal}</b> 點巨額護盾！`);
+    } else {
+        addLog(`🌿 <b style="color:#2ecc71;">大治癒術！</b> 溢出的生命力化為護盾，獲得 <b style="color:#2ecc71;">${totalHeal}</b> 點生命！`);
+    }
+    
+    reduceCooldowns(); 
     monsterTurn(); 
     updateUI();
 
@@ -887,6 +1073,7 @@ function reduceCooldowns() {
     if (player.skills.fireballCD > 0) player.skills.fireballCD--;
     if (player.skills.lightningCD > 0) player.skills.lightningCD--;
     if (player.skills.healCD > 0) player.skills.healCD--;
+    if (player.skills.windWalkCD > 0) player.skills.windWalkCD--;
 }
 
 function renderAreaSelector() {
@@ -957,6 +1144,8 @@ function revive() {
     player.skills.fireballCD = 0;   
     player.skills.lightningCD = 0;
     player.skills.healCD = 0;
+    player.skills.windWalkCD = 0;
+    player.windWalkActive = false;
 
     const exploreBtn = document.getElementById('explore-btn');
     exploreBtn.innerText = `🧭 開始探險 (💰 ${player.coin})`;
@@ -965,7 +1154,7 @@ function revive() {
 
     const shopContainer = document.getElementById('shop-container');
     if(shopContainer) shopContainer.style.display = 'block';
-    
+
     updateUI(); 
     saveGame(); 
 }

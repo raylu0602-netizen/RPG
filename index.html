@@ -74,10 +74,13 @@
                 
                 <button id="lightning-btn" onclick="useLightning()" class="btn-skill" style="background: #9b59b6;">⚡ 閃電斬</button>
                 <button id="heal-btn" onclick="useHeal()" class="btn-skill" style="background: #2ecc71;">🌿 治癒術</button>
+                <button id="wind-btn" class="btn-skill" onclick="useWindWalk()" style="display:none;">🌪️ 風行術</button>
             </div>
                 
                 <div class="system-btns">
-                    <button id="reset-btn" onclick="resetGame()">🔄 重置</button>
+                    <button onclick="location.reload()" style="background-color: #34495e; color: white; padding: 5px 10px; border-radius: 4px; border: none; cursor: pointer;">
+                        🔄 重新整理
+                    </button>
                     <button onclick="deleteSave()" class="btn-danger">🗑️ 刪存</button>
                 </div>
                 <div id="area-selector-container" style="display: none; margin-bottom: 15px;">
@@ -109,6 +112,10 @@
             <div class="shop-item" id="shop-heal">
                 <span>📗 治癒術技能書 (200g)</span>
                 <button onclick="buyItem('heal_book')">學習</button>
+            </div>
+            <div id="shop-windWalk" class="shop-item">
+                <span>🌪️ 技能書：風行 (500g)</span>
+                <button onclick="buyItem('windWalk_book')">購買</button>
             </div>
             <div class="shop-item">
                 <span>📿 守護十字架 (300g)</span>
@@ -150,6 +157,13 @@
                 <div>
                     <button onclick="buyItem('upgrade_heal')">升級</button>
                     <button onclick="buyItem('max_upgrade_heal')" style="background-color: #2ecc71; font-weight: bold; border-color: #27ae60;">MAX</button>
+                </div>
+            </div>
+            <div id="shop-upg-windWalk" class="shop-item" style="display: none;">
+                <span id="windWalk-upg-text">🌪️ 升級風行</span>
+                <div>
+                    <button onclick="buyItem('upgrade_windWalk')">升級</button>
+                    <button onclick="buyItem('max_upgrade_windWalk')" style="background-color: #1abc9c; font-weight: bold; border-color: #16a085;">MAX</button>
                 </div>
             </div>
             <p style="font-size: 0.8em; color: #888; margin-top: 20px;">* 戰鬥期間商店不營業 *</p>
