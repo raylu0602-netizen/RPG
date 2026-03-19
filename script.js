@@ -33,7 +33,7 @@ const areas = [
         monsters: [
             { name: "綠色史萊姆", hp: 20, maxHp: 20, image: "images/slime.png", atk: [3, 6], def: 1,exp: 25, coin: 20 },
             { name: "森林哥布林", hp: 40, maxHp: 40, image: "images/goblin.jpg", atk: [6, 12], def: 2,exp: 50, coin: 35 },
-            { name: "地獄小惡魔", hp: 80, maxHp: 80, image: "images/imp.png", atk: [12, 18], def: 5,exp: 75, coin: 50 }
+            { name: "地獄小惡魔", hp: 60, maxHp: 60, image: "images/imp.png", atk: [12, 18], def: 5,exp: 75, coin: 50 }
         ],
         boss: {
             name: "深淵魔龍", hp: 160, maxHp: 160, image: "images/boss.jpg", atk: [15, 25], def: 10,exp: 200, coin: 100, isBoss: true 
