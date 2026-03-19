@@ -14,7 +14,13 @@
             <div class="stats-panel">
                 <p>等級: <span id="player-level" class="highlight">1</span></p>
                 <p>⚔️ 攻擊: <span id="player-atk-display" class="highlight">5 - 12</span></p>
+                <p>🛡️ 防禦力: <span id="player-def">0</span> <span id="def-reduction" style="color: #2ecc71; font-size: 0.8em;">(減傷 0%)</span></p>
                 <p>💰 金幣: <span id="player-coin-display" class="highlight">0</span></p>
+                <div style="background-color: #2c3e50; padding: 10px; border-radius: 8px; margin-top: 10px; margin-bottom: 10px;">
+                    <h4 style="margin: 0 0 5px 0; color: #f1c40f;">👑 目前裝備</h4>
+                    <p style="margin: 2px 0;">⚔️ 武器: <span id="equipped-weapon" style="color: #bdc3c7;">(空)</span></p>
+                    <p style="margin: 2px 0;">🛡️ 防具: <span id="equipped-armor" style="color: #bdc3c7;">(空)</span></p>
+                </div>
                 <p>📿 十字架: <span id="player-amulet-display" class="highlight">0</span></p>
                 <hr>
                 <hr>
@@ -31,8 +37,16 @@
                 <small id="player-exp">0 / 100</small>
                 <div id="inventory-container">
                     <h3>🎒 我的背包</h3>
-                    <div id="inventory-list">
-                        </div>
+                    
+                    <div style="margin-top: 10px;">
+                        <h4 style="color: #e74c3c; margin-bottom: 5px;">⚔️ 武器庫</h4>
+                        <div id="inventory-weapons" style="margin-bottom: 15px; min-height: 30px;"></div>
+                    </div>
+
+                    <div>
+                        <h4 style="color: #3498db; margin-bottom: 5px;">🛡️ 防具庫</h4>
+                        <div id="inventory-armors" style="min-height: 30px;"></div>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -102,25 +116,41 @@
             </div>
             <div class="shop-item">
                 <span id="amulet-text">✨ 經驗護符 (+0% 經驗) (200g)</span>
-                <button onclick="buyItem('exp_amulet')">購買</button>
+                <div>
+                    <button onclick="buyItem('exp_amulet')">購買</button>
+                    <button onclick="buyItem('max_exp_amulet')" style="background-color: #f39c12; font-weight: bold; border-color: #e67e22;">MAX</button>
+                </div>
             </div>
+
             <div class="shop-item">
                 <span id="gold-amulet-text">🪙 金幣護符 (+0% 金幣) (200g)</span>
-                <button onclick="buyItem('gold_amulet')">購買</button>
+                <div>
+                    <button onclick="buyItem('gold_amulet')">購買</button>
+                    <button onclick="buyItem('max_gold_amulet')" style="background-color: #f1c40f; color: black; font-weight: bold; border-color: #f39c12;">MAX</button>
+                </div>
             </div>
-            <div id="shop-upg-fireball" class="shop-item" style="display: none;">
-                <span id="fireball-upg-text">🔥 升級火球術 Lv.1 (0g)</span>
-                <button onclick="buyItem('upgrade_fireball')">升級</button>
+            <div id="shop-upg-fireball" class="shop-item">
+                <span id="fireball-upg-text">🔥 升級火球術</span>
+                <div>
+                    <button onclick="buyItem('upgrade_fireball')">升級</button>
+                    <button onclick="buyItem('max_upgrade_fireball')" style="background-color: #e74c3c; font-weight: bold; border-color: #c0392b;">MAX</button>
+                </div>
             </div>
 
             <div id="shop-upg-lightning" class="shop-item" style="display: none;">
-                <span id="lightning-upg-text">⚡ 升級閃電斬 Lv.1 (0g)</span>
-                <button onclick="buyItem('upgrade_lightning')">升級</button>
+                <span id="lightning-upg-text">⚡ 升級閃電斬</span>
+                <div>
+                    <button onclick="buyItem('upgrade_lightning')">升級</button>
+                    <button onclick="buyItem('max_upgrade_lightning')" style="background-color: #9b59b6; font-weight: bold; border-color: #8e44ad;">MAX</button>
+                </div>
             </div>
 
             <div id="shop-upg-heal" class="shop-item" style="display: none;">
-                <span id="heal-upg-text">🌿 升級治癒術 Lv.1 (0g)</span>
-                <button onclick="buyItem('upgrade_heal')">升級</button>
+                <span id="heal-upg-text">🌿 升級治癒術</span>
+                <div>
+                    <button onclick="buyItem('upgrade_heal')">升級</button>
+                    <button onclick="buyItem('max_upgrade_heal')" style="background-color: #2ecc71; font-weight: bold; border-color: #27ae60;">MAX</button>
+                </div>
             </div>
             <p style="font-size: 0.8em; color: #888; margin-top: 20px;">* 戰鬥期間商店不營業 *</p>
         </aside>
