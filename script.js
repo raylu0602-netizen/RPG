@@ -622,7 +622,7 @@ function spawnBoss() {
     currentMonster = { ...currentAreaBoss };
     currentMonster.atk = [...currentAreaBoss.atk];
     
-    let bossMultiplier = 1 + (player.level - 1) * 0.3 + Math.pow(2.2,player.level/5); 
+    let bossMultiplier = Math.pow(2.2,player.level/5); 
     let bossexpMultiplier = Math.pow(1.3, player.level - 1);
     let defMultiplier =  Math.pow(2, player.level /5);
     currentMonster.maxHp = Math.floor(currentMonster.maxHp * bossMultiplier);
