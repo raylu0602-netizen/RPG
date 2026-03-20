@@ -3,9 +3,9 @@ let player = {
     atkRange: [5, 12],
     
     // --- 技能相關 ---
-    skills: { fireballCD: 0, lightningCD: 0, healCD: 0 },
-    unlockedSkills: { fireball: true, lightning: false, heal: false ,windWalk: false }, 
-    skillLevels: { fireball: 1, lightning: 1, heal: 1 ,windWalk: 1}, 
+    skills: { fireballCD: 0, lightningCD: 0, healCD: 0 ,holyLightCD: 0, windWalkCD: 0,blackHoleCD: 0},
+    unlockedSkills: { fireball: true, lightning: false, heal: false ,windWalk: false, holyLight: false, blackHole: false }, 
+    skillLevels: { fireball: 1, lightning: 1, heal: 1 ,windWalk: 1, holyLight: 1, blackHole: 1}, 
     windWalkActive: false,
     bossDefeatedLevel: 0,
     protectionAmulet: 0, 
@@ -21,7 +21,8 @@ let player = {
     baseDef: 0,
     extraDEF: 0,
     baseMaxHp: 100,
-    currentArea: 0
+    currentArea: 0,
+    rebirthCount: 0
 };
 
 // --- 🗺️ 世界地圖與怪物設定 ---
@@ -31,12 +32,12 @@ const areas = [
         name: "幽暗森林",
         reqLevel: 1, // 進入需求等級
         monsters: [
-            { name: "綠色史萊姆", hp: 20, maxHp: 20, image: "images/slime.png", atk: [3, 6], def: 1,exp: 50, coin: 50 },
-            { name: "森林哥布林", hp: 40, maxHp: 40, image: "images/goblin.jpg", atk: [6, 12], def: 2,exp: 80, coin: 100 },
-            { name: "地獄小惡魔", hp: 60, maxHp: 60, image: "images/imp.png", atk: [12, 18], def: 5,exp: 130, coin: 150 }
+            { name: "綠色史萊姆", hp: 20, maxHp: 20, image: "images/slime.png", atk: [3, 6], def: 1,exp: 25, coin: 50 },
+            { name: "森林哥布林", hp: 40, maxHp: 40, image: "images/goblin.jpg", atk: [6, 12], def: 2,exp: 40, coin: 100 },
+            { name: "地獄小惡魔", hp: 60, maxHp: 60, image: "images/imp.png", atk: [12, 18], def: 5,exp: 65, coin: 150 }
         ],
         boss: {
-            name: "深淵魔龍", hp: 160, maxHp: 160, image: "images/boss.jpg", atk: [15, 25], def: 10,exp: 400, coin: 600, isBoss: true 
+            name: "深淵魔龍", hp: 160, maxHp: 160, image: "images/boss.jpg", atk: [15, 25], def: 10,exp: 250, coin: 600, isBoss: true 
         }
     },
     {
@@ -44,12 +45,12 @@ const areas = [
         name: "烈焰火山",
         reqLevel: 10, // 🌟 10 級才能解鎖！
         monsters: [
-            { name: "熔岩犬", hp: 120, maxHp: 120, image: "images/hound.png", atk: [20, 35], def: 5,exp: 130, coin: 150 },
-            { name: "火焰精靈", hp: 60, maxHp: 60, image: "images/fire_spirit.png", atk: [30, 45], def: 0,exp: 1650, coin: 75 },
-            { name: "火山岩怪", hp: 180, maxHp: 180, image: "images/golem.png", atk: [15, 25], def: 10,exp: 200, coin: 225 }
+            { name: "熔岩犬", hp: 120, maxHp: 120, image: "images/hound.png", atk: [20, 35], def: 5,exp: 100, coin: 150 },
+            { name: "火焰精靈", hp: 60, maxHp: 60, image: "images/fire_spirit.png", atk: [30, 45], def: 0,exp: 140, coin: 75 },
+            { name: "火山岩怪", hp: 180, maxHp: 180, image: "images/golem.png", atk: [15, 25], def: 10,exp: 160, coin: 225 }
         ],
         boss: {
-            name: "灰燼鳳凰", hp: 400, maxHp: 400, image: "images/fire_boss.png", atk: [40, 60], def: 20,exp: 500, coin: 900, isBoss: true 
+            name: "灰燼鳳凰", hp: 400, maxHp: 400, image: "images/fire_boss.png", atk: [40, 60], def: 20,exp: 400, coin: 900, isBoss: true 
         }
     }
 ];
@@ -107,6 +108,15 @@ function buyItem(item) {
             addLog("❌ 金幣不足！");
         }
     }
+    else if (item === 'holyLight_book') {
+        if (player.coin >= 1000000) {
+            player.coin -= 1000000;
+            player.unlockedSkills.holyLight = true;
+            addLog("✨ <b style='color:#f1c40f;'>你領悟了宇宙的真理，解鎖了轉生神技：【✨ 聖光】！</b>");
+        } else {
+            addLog("❌ 金幣不足！");
+        }
+    }
     else if (item === 'amulet') {
         if (player.coin >= 300) {
             player.coin -= 300;
@@ -117,11 +127,11 @@ function buyItem(item) {
         }
     }
     else if (item === 'exp_amulet') {
-        let cost = 200 + (player.expAmulet * 150);
+        let cost = 200 + (player.expAmulet * 100);
         if (player.coin >= cost) {
             player.coin -= cost;
             player.expAmulet += 1; 
-            let currentBonus = player.expAmulet * 10;
+            let currentBonus = Math.floor(1000000*(player.expAmulet / (player.expAmulet + 1000)))/1000;
             addLog(`✨ 你購買了經驗護符！現在打怪會額外獲得 <b style="color:#f1c40f;">${currentBonus}%</b> 經驗值！`);
         } else {
             addLog(`❌ 金幣不足！購買經驗護符需要 ${cost} 金幣。`);
@@ -257,7 +267,7 @@ function buyItem(item) {
         if (countGained > 0) {
             player.coin -= totalCost;
             player.expAmulet += countGained;
-            let currentBonus = player.expAmulet * 10;
+            let currentBonus = Math.floor(1000000*(player.expAmulet / (player.expAmulet + 1000)))/1000;
             addLog(`✨ 豪擲了 ${totalCost} 金幣，一口氣狂買了 ${countGained} 個經驗護符！現在打怪會額外獲得 <b style="color:#f1c40f;">${currentBonus}%</b> 經驗值！`);
         } else {
             addLog(`❌ 金幣不足，連買 1 個經驗護符都不夠！`);
@@ -331,6 +341,79 @@ function buyItem(item) {
             addLog(`❌ 金幣不足，連升 1 級都不夠！`);
         }
     }
+    else if (item === 'upgrade_holyLight') {
+        let cost = 5000000 + (player.skillLevels.holyLight * 2000000);
+        if (player.coin >= cost) {
+            player.coin -= cost;
+            player.skillLevels.holyLight++;
+            addLog(`✨ 花費 ${cost} 金幣，【聖光】升級到了 <b style="color:#f1c40f;">Lv.${player.skillLevels.holyLight}</b>！`);
+        } else {
+            addLog(`❌ 金幣不足，升級聖光需要 ${cost} 金幣。`);
+        }
+    }
+    // --- 聖光升級 (MAX) ---
+    else if (item === 'max_upgrade_holyLight') {
+        let totalCost = 0;
+        let levelsGained = 0;
+        let currentLv = player.skillLevels.holyLight;
+        
+        while (true) {
+            let nextCost = 5000000 + ((currentLv + levelsGained) * 2000000);
+            if (player.coin >= totalCost + nextCost) {
+                totalCost += nextCost;
+                levelsGained++;
+            } else { break; }
+        }
+        if (levelsGained > 0) {
+            player.coin -= totalCost;
+            player.skillLevels.holyLight += levelsGained;
+            addLog(`✨ 豪擲 ${totalCost} 金幣，【聖光】連升 ${levelsGained} 級，達到 <b style="color:#f1c40f;">Lv.${player.skillLevels.holyLight}</b>！`);
+        } else {
+            addLog(`❌ 金幣不足，連升 1 級都不夠！`);
+        }
+    }
+    // --- 黑洞買書 ---
+    else if (item === 'blackHole_book') {
+        if (player.coin >= 100000000) { // 1億金幣
+            player.coin -= 100000000;
+            player.unlockedSkills.blackHole = true;
+            addLog("🌌 <b style='color:#9b59b6;'>你窺探了深淵的盡頭，解鎖了3轉神技：【🌌 虛空黑洞】！</b>");
+        } else {
+            addLog("❌ 金幣不足！");
+        }
+    }
+    // --- 黑洞升級 ---
+    else if (item === 'upgrade_blackHole') {
+        let cost = 50000000 + (player.skillLevels.blackHole * 20000000);
+        if (player.coin >= cost) {
+            player.coin -= cost;
+            player.skillLevels.blackHole++;
+            addLog(`🌌 花費 ${cost} 金幣，【虛空黑洞】升級到了 <b style="color:#9b59b6;">Lv.${player.skillLevels.blackHole}</b>！`);
+        } else {
+            addLog(`❌ 金幣不足，升級黑洞需要 ${cost} 金幣。`);
+        }
+    }
+    // --- 黑洞升級 (MAX) ---
+    else if (item === 'max_upgrade_blackHole') {
+        let totalCost = 0;
+        let levelsGained = 0;
+        let currentLv = player.skillLevels.blackHole;
+        
+        while (true) {
+            let nextCost = 50000000 + ((currentLv + levelsGained) * 20000000);
+            if (player.coin >= totalCost + nextCost) {
+                totalCost += nextCost;
+                levelsGained++;
+            } else { break; }
+        }
+        if (levelsGained > 0) {
+            player.coin -= totalCost;
+            player.skillLevels.blackHole += levelsGained;
+            addLog(`🌌 豪擲 ${totalCost} 金幣，【虛空黑洞】連升 ${levelsGained} 級，達到 <b style="color:#9b59b6;">Lv.${player.skillLevels.blackHole}</b>！`);
+        } else {
+            addLog(`❌ 金幣不足！`);
+        }
+    }
     saveGame(); 
     updateUI(); 
 }
@@ -394,6 +477,18 @@ function updateUI() {
     if (player.goldAmulet === undefined) player.goldAmulet = 0; 
     if (player.baseDef === undefined) player.baseDef = 0;
     if (player.extraDEF === undefined) player.extraDEF = 0;
+    // 🌟 新增：轉生系統與神級技能的舊存檔保護
+    if (player.rebirthCount === undefined) player.rebirthCount = 0;
+    if (player.skills.holyLightCD === undefined) player.skills.holyLightCD = 0;
+    if (player.unlockedSkills.holyLight === undefined) player.unlockedSkills.holyLight = false;
+    // 🌟 在 updateUI 舊存檔防護區補上這行
+    if (player.skillLevels.holyLight === undefined) player.skillLevels.holyLight = 1;
+    if (player.skills.blackHoleCD === undefined) player.skills.blackHoleCD = 0;
+    if (player.unlockedSkills.blackHole === undefined) player.unlockedSkills.blackHole = false;
+    if (player.skillLevels.blackHole === undefined) player.skillLevels.blackHole = 1;
+    
+    // 順便把轉生次數顯示在畫面上 (如果你有在 HTML 寫玩家名字，可以接在名字後面)
+    document.getElementById('player-level').innerText = `Lv.${player.level} (轉生: ${player.rebirthCount})`;
     
     // 🌟🌟🌟 新增：針對「風行」技能的舊存檔保護機制 🌟🌟🌟
     if (player.skills.windWalkCD === undefined) player.skills.windWalkCD = 0;
@@ -404,6 +499,14 @@ function updateUI() {
 
     if (player.currentArea === undefined) player.currentArea = 0;
     player.atkRange = calculateTotalAtk();
+    // 🌟 舊存檔保護區塊加入這行：
+    if (player.autoDismantle === undefined) player.autoDismantle = false;
+
+    // 🌟 讓畫面上的打勾狀態與存檔同步：
+    const autoDismantleCb = document.getElementById('auto-dismantle-cb');
+    if (autoDismantleCb && autoDismantleCb.checked !== player.autoDismantle) {
+        autoDismantleCb.checked = player.autoDismantle;
+    }
 // 🌟 在 updateUI() 裡面找到這段並替換：
     let armorBonus = (player.equiptment && player.equiptment.armor) ? player.equiptment.armor.defBonus : 0;
     let totalDEF = player.baseDef + player.extraDEF + armorBonus; // 加上裝備防禦！
@@ -419,9 +522,9 @@ function updateUI() {
 
     const amuletText = document.getElementById('amulet-text');
     if (amuletText) {
-        let cost = 200 + (player.expAmulet * 150); 
-        let bonus = player.expAmulet * 10; 
-        amuletText.innerText = `✨ 經驗護符 (+${bonus}% 經驗) (${cost}g)`;
+        let expCost = 200 + (player.expAmulet * 100);
+        let currentExpPercent = Math.floor(1000000*(player.expAmulet / (player.expAmulet + 1000)))/1000 ;
+        amuletText.innerText = `✨ 經驗護符 (+${currentExpPercent}% 經驗) (${expCost}g)`;
     }
 
     const goldAmuletText = document.getElementById('gold-amulet-text');
@@ -429,6 +532,12 @@ function updateUI() {
         let cost = 200 + (player.goldAmulet * 150); 
         let bonus = player.goldAmulet * 5; 
         goldAmuletText.innerText = `🪙 金幣護符 (+${bonus}% 金幣) (${cost}g)`;
+    }
+    // 🌟 轉蛋機價格動態更新 (基礎價 1000 × 玩家等級)
+    let gachaText = document.getElementById('gacha-text');
+    if (gachaText) {
+        let currentGachaCost = 1000 * player.level; 
+        gachaText.innerText = `🎰 傳說裝備轉蛋 (${currentGachaCost}g / 次)`;
     }
 
     document.getElementById('player-hp').innerText = `${player.hp} / ${player.maxHp}`;
@@ -514,7 +623,27 @@ function updateUI() {
         fbBtn.disabled = player.skills.fireballCD > 0;
         fbBtn.innerText = player.skills.fireballCD > 0 ? `🔥 CD ${player.skills.fireballCD}` : "🔥 火球術";
     }
+    // 控制黑洞技能書顯示 (達 3 轉且未學會)
+    let shopBlackHole = document.getElementById('shop-blackHole');
+    if (shopBlackHole) shopBlackHole.style.display = (player.rebirthCount >= 3 && !player.unlockedSkills.blackHole) ? 'flex' : 'none';
 
+    // 控制黑洞升級區塊 (已學會)
+    let upgBlackHole = document.getElementById('shop-upg-blackHole');
+    if (upgBlackHole) {
+        upgBlackHole.style.display = player.unlockedSkills.blackHole ? 'flex' : 'none';
+        let costBH = 50000000 + (player.skillLevels.blackHole * 20000000);
+        document.getElementById('blackHole-upg-text').innerText = `🌌 升級黑洞 Lv.${player.skillLevels.blackHole} (${costBH}g)`;
+    }
+    
+    // 控制黑洞戰鬥按鈕
+    const bhBtn = document.getElementById('blackhole-btn');
+    if (bhBtn) {
+        bhBtn.style.display = player.unlockedSkills.blackHole ? 'inline-block' : 'none';
+        if (player.unlockedSkills.blackHole) {
+            bhBtn.disabled = player.skills.blackHoleCD > 0;
+            bhBtn.innerText = player.skills.blackHoleCD > 0 ? `🌌 CD ${player.skills.blackHoleCD}` : "🌌 黑洞";
+        }
+    }
     const shopLt = document.getElementById('shop-lightning');
     if (shopLt) shopLt.style.display = player.unlockedSkills.lightning ? 'none' : 'flex';
     const shopHl = document.getElementById('shop-heal');
@@ -583,6 +712,38 @@ function updateUI() {
         let costWind = 500 + (player.skillLevels.windWalk * 300);
         document.getElementById('windWalk-upg-text').innerText = `🌪️ 升級風行 Lv.${player.skillLevels.windWalk} (${costWind}g)`;
     }
+    // 控制轉生按鈕顯示 (滿 1000 級才顯示)
+    let rebirthContainer = document.getElementById('rebirth-container');
+    if (rebirthContainer) {
+        rebirthContainer.style.display = player.level >= 1000 ? 'block' : 'none';
+    }
+
+    // 控制聖光技能書顯示 (必須達 1 轉，且還沒學會)
+    let shopHolyLight = document.getElementById('shop-holyLight');
+    if (shopHolyLight) {
+        if (player.rebirthCount >= 1 && !player.unlockedSkills.holyLight) {
+            shopHolyLight.style.display = 'flex';
+        } else {
+            shopHolyLight.style.display = 'none';
+        }
+    }
+    let upgHolyLight = document.getElementById('shop-upg-holyLight');
+    if (upgHolyLight) {
+        // 「已學會」才顯示升級按鈕
+        upgHolyLight.style.display = player.unlockedSkills.holyLight ? 'flex' : 'none';
+        let costHoly = 5000000 + (player.skillLevels.holyLight * 2000000);
+        document.getElementById('holyLight-upg-text').innerText = `✨ 升級聖光 Lv.${player.skillLevels.holyLight} (${costHoly}g)`;
+    }
+    
+    // 控制聖光戰鬥按鈕
+    const holyBtn = document.getElementById('holy-btn');
+    if (holyBtn) {
+        holyBtn.style.display = player.unlockedSkills.holyLight ? 'inline-block' : 'none';
+        if (player.unlockedSkills.holyLight) {
+            holyBtn.disabled = player.skills.holyLightCD > 0;
+            holyBtn.innerText = player.skills.holyLightCD > 0 ? `✨ CD ${player.skills.holyLightCD}` : "✨ 聖光";
+        }
+    }
     renderInventory();
     renderAreaSelector();
 }
@@ -626,8 +787,11 @@ function checkLevelUp() {
             player.hp += 20; 
         }
 
-        player.baseAtk[0] += 2;
-        player.baseAtk[1] += 4;
+        let rebirthMultiplier = 1 + player.rebirthCount;
+        player.maxHp += Math.floor(20 * rebirthMultiplier);
+        player.hp += Math.floor(20 * rebirthMultiplier); 
+        player.baseAtk[0] += Math.floor(2 * rebirthMultiplier);
+        player.baseAtk[1] += Math.floor(4 * rebirthMultiplier);
         if(player.level >=15) {
             player.nextLevelExp = Math.floor(100 * Math.pow(player.level, 2));
         }else{
@@ -658,9 +822,11 @@ function explore() {
 
         let hpMultiplier = Math.pow(player.level, 2)/2 ;
         let atkMultiplier = 1 + (player.level - 1) * 0.25;
-        let expMultiplier = Math.pow(player.level, 2)/3;
+        let expMultiplier = Math.pow(player.level, 2)/5;
+        let coinMultiplier = Math.pow(player.level, 2)/1.5;
         if(player.level<15) {
             expMultiplier = Math.pow(1.5, player.level - 1);
+            coinMultiplier = Math.pow(1.7, player.level - 1);
             }
         let defMultiplier =  player.level *0.2;
         currentMonster.maxHp = Math.floor(currentMonster.maxHp * hpMultiplier);
@@ -669,10 +835,13 @@ function explore() {
         currentMonster.atk[1] = Math.floor(currentMonster.atk[1] * atkMultiplier);
         currentMonster.def = Math.floor((currentMonster.def || 0) * defMultiplier);
         
-        let expBonusRate = 1 + (player.expAmulet * 0.1); 
+        let maxExpBonus = 20; 
+        let expK = 1000; 
+    
+        let expBonusRate = 1 + (maxExpBonus * (player.expAmulet / (player.expAmulet + expK)));
         currentMonster.exp = Math.floor(currentMonster.exp * expMultiplier * expBonusRate);
         let goldBonusRate = 1 + (player.goldAmulet * 0.05); 
-        currentMonster.coin = Math.floor(currentMonster.coin * hpMultiplier * goldBonusRate);
+        currentMonster.coin = Math.floor(currentMonster.coin * coinMultiplier * goldBonusRate)*player.rebirthCount;
 
         currentMonster.name = `Lv.${player.level} ${currentMonster.name}`;
 
@@ -699,11 +868,14 @@ function spawnBoss() {
     const currentAreaBoss = areas[player.currentArea].boss;
     currentMonster = { ...currentAreaBoss };
     currentMonster.atk = [...currentAreaBoss.atk];
-    let bossexpMultiplier=Math.pow(player.level, 2)/3;
+    let bossexpMultiplier=Math.pow(player.level, 2)/5;
+    let bosscoinMultiplier=Math.pow(player.level, 2)/1.5;
     let bossMultiplier = Math.pow(player.level, 2); 
     let atkMultiplier = 1 + (player.level - 1) * 0.5;
     if(player.level<=15) {
-        bossexpMultiplier = Math.pow(1.5, player.level - 1);
+        bossexpMultiplier = Math.pow(1.2, player.level - 1);
+        bosscoinMultiplier = Math.pow(1.7, player.level - 1);
+        bossMultiplier = Math.pow(1.2, player.level - 1);
     }
     let defMultiplier =  Math.pow(player.level, 2)*0.3;
     currentMonster.maxHp = Math.floor(currentMonster.maxHp * bossMultiplier);
@@ -713,10 +885,13 @@ function spawnBoss() {
 
     currentMonster.atk[0] = Math.floor(currentMonster.atk[0] * atkMultiplier);
     currentMonster.atk[1] = Math.floor(currentMonster.atk[1] * atkMultiplier);
-    let expBonusRate = 1 + ((player.expAmulet || 0) * 0.1);
+    let maxExpBonus = 20; 
+    let expK = 1000; 
+    
+    let expBonusRate = 1 + (maxExpBonus * (player.expAmulet / (player.expAmulet + expK)));
     currentMonster.exp = Math.floor(currentMonster.exp * bossexpMultiplier * expBonusRate);
     let goldBonusRateBoss = 1 + ((player.goldAmulet || 0) * 0.05);
-    currentMonster.coin = Math.floor(currentMonster.coin * bossexpMultiplier * goldBonusRateBoss);
+    currentMonster.coin = Math.floor(currentMonster.coin * bosscoinMultiplier * goldBonusRateBoss)*player.rebirthCount;
     currentMonster.name = `💀 領域領主：${currentMonster.name} (Lv.${player.level})`;
 
     const hpFill = document.getElementById('monster-hp-fill');
@@ -799,10 +974,9 @@ function useFireball() {
         totalBlocked += (currentRaw - currentFinal);
     }
     currentMonster.burnDuration = 3; // 持續 3 回合
-    // 燃燒傷害：2% 最大血量 (對付高血量魔王神技) + 技能等級的固定傷害
-    currentMonster.burnDmg = Math.floor(currentMonster.maxHp *1000/(1000+player.skillLevels.fireball));
+    // ✅ 正確寫法：只在最外層，對「最終傷害」進行無條件捨去
+    currentMonster.burnDmg = Math.floor(currentMonster.maxHp * (player.skillLevels.fireball / (player.skillLevels.fireball + 500)));
     player.skills.fireballCD = 4;
-    
     if (hits === 2) {
         addLog(`🌪️ <b style="color:#1abc9c;">【風行雙星】</b> 🔥 兩顆火球接連轟炸！造成驚人的 <b style="color:#e74c3c; font-size:1.1em;">${totalFinalDmg}</b> 總傷害！(抵擋 ${totalBlocked} 點)`);
     } else {
@@ -855,7 +1029,94 @@ function useWindWalk() {
     monsterTurn();
     updateUI();
 }
+// --- ✨ 1轉專屬神技 (支援風行連擊版) ---
+function useHolyLight() {
+    if (!currentMonster || player.skills.holyLightCD > 0) return;
 
+    let baseHolyDmg = Math.floor(player.maxHp * 0.1) + (player.atkRange[1]*10);
+    let rawHolyDmg = baseHolyDmg * Math.pow(player.rebirthCount, 2) * (50+ player.skillLevels.holyLight * 20); 
+    
+    // 🌟 風行判定邏輯
+    let hits = 1;
+    let windMultiplier = 1;
+    if (player.windWalkActive) {
+        hits = 2;
+        // 強化倍率：第二下吃風行技能等級加成
+        windMultiplier = 1 + (player.skillLevels.windWalk * 0.5); 
+        player.windWalkActive = false; // 消耗狀態
+    }
+
+    let totalFinalDmg = 0;
+
+    // 執行連擊迴圈 (聖光是真實傷害，無視防禦)
+    for(let i=0; i<hits; i++) {
+        let currentFinal = i === 1 ? Math.floor(rawHolyDmg * windMultiplier) : rawHolyDmg;
+        currentMonster.hp -= currentFinal;
+        totalFinalDmg += currentFinal;
+    }
+
+    player.skills.holyLightCD = 7; 
+
+    // 戰鬥廣播
+    if (hits === 2) {
+        addLog(`🌪️ <b style="color:#1abc9c; font-size:1.2em;">【風行．超新星】</b> ✨ 兩道聖光接連貫穿天際！造成了 <b style="color:#e74c3c; font-size:1.5em;">${totalFinalDmg}</b> 點滅世級真實總傷害！`);
+    } else {
+        addLog(`✨ <b style="color:#f1c40f; font-size:1.3em;">【神罰．聖光】</b> 降臨！星辰之力貫穿了 ${currentMonster.name}，造成 <b style="color:#e74c3c; font-size:1.3em;">${totalFinalDmg}</b> 點毀滅性真實傷害！`);
+    }
+    
+    checkBattle();
+}
+// --- 🌌 3轉專屬神技：虛空黑洞 ---
+function useBlackHole() {
+    if (!currentMonster || player.skills.blackHoleCD > 0) return;
+
+    let skillLv = player.skillLevels.blackHole;
+    // 基礎傷害極高：最大血量 20% + 攻擊力上限 * 20
+    let baseBHDmg = Math.floor(player.maxHp * 0.2) + (player.atkRange[1] * 20);
+    
+    // 🌟 三次方爆發公式：基礎傷害 × (轉生次數的 3 次方) × (100 + 技能等級 × 50)
+    let rawBHDmg = baseBHDmg * Math.pow(player.rebirthCount, 3) * (100 + skillLv * 50); 
+    
+    // 🌟 風行判定邏輯
+    let hits = 1;
+    let windMultiplier = 1;
+    if (player.windWalkActive) {
+        hits = 2;
+        windMultiplier = 1 + (player.skillLevels.windWalk * 0.5); 
+        player.windWalkActive = false; 
+    }
+
+    let totalFinalDmg = 0;
+
+    for(let i=0; i<hits; i++) {
+        let currentFinal = i === 1 ? Math.floor(rawBHDmg * windMultiplier) : rawBHDmg;
+        currentMonster.hp -= currentFinal;
+        totalFinalDmg += currentFinal;
+    }
+
+    // 🌟 黑洞特有：吞噬吸血 (將 30% 真實傷害轉化為自身護盾)
+    let lifesteal = Math.floor(totalFinalDmg * 0.3);
+    player.hp += lifesteal;
+
+    player.skills.blackHoleCD = 10; // 滅世級冷卻：10回合
+
+    // 戰鬥廣播
+    if (hits === 2) {
+        addLog(`🌪️ <b style="color:#1abc9c; font-size:1.2em;">【風行．維度崩塌】</b> 🌌 兩顆黑洞互相吸引引發宇宙爆炸！造成 <b style="color:#9b59b6; font-size:1.5em;">${totalFinalDmg}</b> 點毀滅傷害，並吞噬了 <b style="color:#2ecc71;">${lifesteal}</b> 點生命護盾！`);
+    } else {
+        addLog(`🌌 <b style="color:#9b59b6; font-size:1.3em;">【虛空黑洞】</b> 撕裂了空間！對 ${currentMonster.name} 造成 <b style="color:#e74c3c; font-size:1.3em;">${totalFinalDmg}</b> 點真實傷害，並吸收 <b style="color:#2ecc71;">${lifesteal}</b> 點護盾！`);
+    }
+    
+    // 更新護盾 UI
+    const hpFill = document.getElementById('player-hp-fill');
+    if (player.hp > player.maxHp && hpFill) {
+        hpFill.style.backgroundColor = "#f1c40f"; 
+        hpFill.style.width = "100%"; 
+        document.getElementById('player-hp').innerText = `🛡️ ${player.hp} / ${player.maxHp}`;
+    }
+
+    checkBattle();
+}
 function monsterTurn() {
     // 🌟🌟🌟 結算狀態異常 (在怪物攻擊前結算) 🌟🌟🌟
     if (currentMonster.burnDuration && currentMonster.burnDuration > 0) {
@@ -1076,6 +1337,8 @@ function reduceCooldowns() {
     if (player.skills.lightningCD > 0) player.skills.lightningCD--;
     if (player.skills.healCD > 0) player.skills.healCD--;
     if (player.skills.windWalkCD > 0) player.skills.windWalkCD--;
+    if (player.skills.holyLightCD > 0) player.skills.holyLightCD--;
+    if (player.skills.blackHoleCD > 0) player.skills.blackHoleCD--;
 }
 
 function renderAreaSelector() {
@@ -1204,6 +1467,7 @@ function dismantleItem(index) {
     const item = player.inventory[index];
     if (!item) return;
 
+    // 檢查是否正在裝備中，如果是，先強制脫下
     if (player.equiptment.weapon === item) {
         player.equiptment.weapon = null;
         addLog("⚠️ 你分解了手中正在裝備的武器！");
@@ -1212,25 +1476,196 @@ function dismantleItem(index) {
         addLog("⚠️ 你分解了身上穿著的防具！");
     }
 
-    let upgradeValue = 1; 
-    if (item.rarity === 'Uncommon') upgradeValue = 3;
-    if (item.rarity === 'Rare') upgradeValue = 5;
-    if (item.rarity === 'Epic') upgradeValue = 10;
-    if (item.rarity === 'Mythic') upgradeValue = 50;
+    // 🌟 全新分解公式：基礎值 × (玩家等級 / 2)
+    let baseValue = 1; 
+    if (item.rarity === 'Uncommon') baseValue = 3;
+    if (item.rarity === 'Rare') baseValue = 5;
+    if (item.rarity === 'Epic') baseValue = 15;
+    if (item.rarity === 'Mythic') baseValue = 50;
 
+    let upgradeValue = baseValue * Math.max(1, Math.floor(player.level / 2));
+
+// 找到 dismantleItem 裡的這段並替換：
     if (item.type === 'weapon') {
         player.extraATK += upgradeValue; 
         addLog(`🔨 <b style="color:#e67e22;">分解成功！</b> 【${item.name}】化為純粹的力量，永久攻擊力 +${upgradeValue}！`);
     } else {
+        // 🌟 防具分解強化：同時增加防禦與大量生命值
         player.extraDEF += upgradeValue; 
-        addLog(`🔨 <b style="color:#2ecc71;">分解成功！</b> 【${item.name}】化為堅固的鐵壁，永久防禦力 +${upgradeValue}！`);
+        let hpGain = upgradeValue * 25; 
+        player.maxHp += hpGain;
+        player.hp += hpGain; // 順便把增加的血量補滿
+        
+        addLog(`🔨 <b style="color:#2ecc71;">分解成功！</b> 【${item.name}】化為鐵壁與生命精華，永久防禦力 +${upgradeValue}、最大生命 +<b style="color:#e74c3c;">${hpGain}</b>！`);
     }
 
+    // 🌟🌟🌟 最關鍵的這三行：刪除物品、刷新背包、存檔 🌟🌟🌟
     player.inventory.splice(index, 1); 
+    renderInventory(); 
     updateUI();
     saveGame();
 }
+function rollGacha(times) {
+    let costPerPull = 1000 * player.level; 
+    let totalCost = costPerPull * times;
 
+    if (player.coin < totalCost) {
+        addLog(`❌ 金幣不足！轉蛋 ${times} 次需要 ${totalCost} 金幣。`);
+        return;
+    }
+
+    player.coin -= totalCost;
+    
+    let results = [];
+    let missCount = 0; 
+    
+    // 🌟 用來統計自動分解獲得的屬性
+    let autoAtkGained = 0;
+    let autoDefGained = 0;
+    let autoHpGained = 0
+    let dismantleCount = 0;
+    
+    for (let i = 0; i < times; i++) {
+        let roll = Math.random();
+        let rarity, minStat, maxStat;
+
+        if (roll < 0.005) { rarity = "Mythic"; minStat = 200; maxStat = 500; } 
+        else if (roll < 0.055) { rarity = "Epic"; minStat = 50; maxStat = 100; } 
+        else if (roll < 0.205) { rarity = "Rare"; minStat = 20; maxStat = 49; } 
+        else if (roll < 0.455) { rarity = "Uncommon"; minStat = 10; maxStat = 19; } 
+        else if (roll < 0.755) { rarity = "Common"; minStat = 1; maxStat = 9; } 
+        else { 
+            missCount++;
+            continue; 
+        }
+
+        let equip = generateRandomEquip(rarity, minStat, maxStat);
+
+        // 🌟 自動分解邏輯攔截！
+        if (player.autoDismantle && (rarity === 'Common' || rarity === 'Uncommon' || rarity === 'Rare')) {
+            let baseValue = 1; 
+            if (rarity === 'Uncommon') baseValue = 3;
+            if (rarity === 'Rare') baseValue = 5;
+
+            // 🌟 同步套用等級加成公式
+            let upgradeValue = baseValue * Math.max(1, Math.floor(player.level / 2));
+
+            if (equip.type === 'weapon') {
+                player.extraATK += upgradeValue;
+                autoAtkGained += upgradeValue;
+            } else {
+                player.extraDEF += upgradeValue;
+                autoDefGained += upgradeValue;
+                
+                // 🌟 新增：自動分解防具加血量
+                let hpGain = upgradeValue * 25;
+                player.maxHp += hpGain;
+                player.hp += hpGain;
+                autoHpGained += hpGain;
+            }
+            dismantleCount++;
+        } else {
+            // 如果沒開自動分解，或是抽到 Epic/Mythic 神裝，就乖乖放進背包
+            player.inventory.push(equip); 
+            results.push(equip);
+        }
+        updateUI();
+    }
+
+    // --- 廣播抽獎與分解結果 ---
+    if (times === 1) {
+        if (missCount === 1) {
+            addLog(`💸 花費 ${totalCost} 金幣轉蛋... <span style="color:#7f8c8d; font-weight:bold;">【謝謝惠顧】 錢被吃掉了！</span>`);
+        } else if (dismantleCount === 1) {
+            let statText = autoAtkGained > 0 
+                ? `攻擊力 +${autoAtkGained}` 
+                : `<b style="color:#3498db;">防禦力 +${autoDefGained}</b>、<b style="color:#2ecc71;">最大生命 +${autoHpGained}</b>`;
+            addLog(`♻️ 抽到了低階裝備，已自動分解轉化為永久 <b style="color:#2ecc71;">${statText}</b>！`);
+        } else {
+            let color = getRarityColor(results[0].rarity);
+            addLog(`🎰 花費 ${totalCost} 金幣轉蛋，獲得了：<b style="color:${color};">${results[0].name}</b>！`);
+        }
+    } else {
+        // 10 連抽結算
+        let logMsg = `🎰 花費 ${totalCost} 金幣進行了 10 連抽！`;
+        if (missCount > 0) logMsg += ` (其中 <b style="color:#e74c3c;">${missCount}</b> 次【謝謝惠顧】)`;
+        addLog(logMsg);
+        
+        // 播報自動分解結算
+        if (dismantleCount > 0) {
+            addLog(`♻️ 系統已將 <b style="color:#e67e22;">${dismantleCount}</b> 件低階裝備自動提煉，永久獲得：<b style="color:#e74c3c;">ATK +${autoAtkGained}</b>、<b style="color:#3498db;">DEF +${autoDefGained}</b>、<b style="color:#2ecc71;">血量 +${autoHpGained}</b>！`);
+        }
+
+        // 播報神裝
+        let rareDrops = results.filter(e => e.rarity === 'Epic' || e.rarity === 'Mythic');
+        if (rareDrops.length > 0) {
+            let rareNames = rareDrops.map(e => `<b style="color:${getRarityColor(e.rarity)}">${e.name}</b>`).join("、");
+            addLog(`🌟 <b style="color:#f1c40f; font-size: 1.1em;">歐氣爆發！</b> 獲得了稀有大獎：${rareNames}！`);
+        }
+    }
+
+    updateUI(); 
+    renderInventory(); 
+    saveGame();
+}
+// --- ♻️ 切換自動分解設定 ---
+function toggleAutoDismantle() {
+    const cb = document.getElementById('auto-dismantle-cb');
+    if (cb) {
+        player.autoDismantle = cb.checked;
+        saveGame();
+    }
+}
+// --- 🌌 轉生系統 ---
+function performRebirth() {
+    if (player.level < 1000) {
+        addLog("❌ 你的境界還不夠，需要達到 1000 級才能轉生！");
+        return;
+    }
+    
+    if (!confirm("⚠️ 警告：這將會重置你的等級、屬性、裝備、金幣與護符（保留技能解鎖狀態）。但你會獲得永久的成長倍率加成！確定要轉生嗎？")) {
+        return;
+    }
+
+    // 🌟 1. 轉生次數 +1
+    player.rebirthCount++;
+    
+    // 🌟 2. 殘酷地重置一切 (保留技能、轉生次數、自動分解設定)
+    let rebirthMultiplier = 1 + player.rebirthCount; // 1轉=2倍基礎, 2轉=3倍基礎...
+
+    player.level = 1;
+    player.exp = 0;
+    player.nextLevelExp = 100;
+    
+    // 轉生後的 1 級，基礎能力直接吃倍率！
+    player.maxHp = 100 * rebirthMultiplier; 
+    player.hp = player.maxHp;
+    player.baseAtk = [5 * rebirthMultiplier, 12 * rebirthMultiplier]; 
+    player.baseDef = 0;
+    player.extraATK = 0;
+    player.extraDEF = 0;
+    
+    player.coin = 0;
+    player.expAmulet = 0;
+    player.goldAmulet = 0;
+    
+    player.inventory = [];
+    player.equiptment = { weapon: null, armor: null };
+    
+    // 重置技能冷卻
+    for (let key in player.skills) player.skills[key] = 0;
+    // 找到這行並替換：
+    player.skillLevels = { fireball: 1, lightning: 1, heal: 1, windWalk: 1, holyLight: 1, blackHole: 1 };
+    player.currentArea = 0; 
+    player.bossDefeatedLevel = 0;
+    // 🌟 3. 世界廣播
+    addLog(`🌌 <b style="color:#8e44ad; font-size: 1.5em;">宇宙轉生發動！</b>`);
+    addLog(`✨ 帶著前世的記憶，你迎來了第 <b style="color:#f1c40f;">${player.rebirthCount}</b> 次新生！你的基礎潛能獲得了永久提升！`);
+    
+    updateUI();
+    renderInventory();
+    saveGame();
+}
 function deleteSave() {
     if (confirm("確定要刪除所有冒險進度嗎？這無法還原！")) {
         localStorage.removeItem('myRpgSave');

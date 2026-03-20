@@ -49,6 +49,13 @@
                     </div>
                 </div>
             </div>
+            <div id="rebirth-container" style="display:none; text-align:center; margin-top: 30px; padding: 20px; border: 2px dashed #8e44ad; background-color: #2c3e50;">
+                <h3 style="color: #9b59b6; margin-top: 0;">🌌 境界突破：宇宙轉生</h3>
+                <p style="color: #bdc3c7; font-size: 0.9em;">捨棄今生的一切修為，換取更高維度的靈魂。每次轉生將獲得<b style="color:#f1c40f;">永久數值成長加倍</b>與<b style="color:#e74c3c;">解鎖神級技能</b>！</p>
+                <button onclick="performRebirth()" style="background-color: #8e44ad; color: white; padding: 15px 30px; font-size: 1.2em; font-weight: bold; border: 2px solid #9b59b6; border-radius: 10px; cursor: pointer;">
+                    ✨ 確認轉生 (需要 Lv.1000)
+                </button>
+            </div>
         </aside>
 
         <main class="main-content">
@@ -75,6 +82,8 @@
                 <button id="lightning-btn" onclick="useLightning()" class="btn-skill" style="background: #9b59b6;">⚡ 閃電斬</button>
                 <button id="heal-btn" onclick="useHeal()" class="btn-skill" style="background: #2ecc71;">🌿 治癒術</button>
                 <button id="wind-btn" class="btn-skill" onclick="useWindWalk()" style="display:none;">🌪️ 風行術</button>
+                <button id="holy-btn" class="btn-skill" onclick="useHolyLight()" style="display:none;"></button>
+                <button id="blackhole-btn" class="btn-skill" onclick="useBlackHole()" style="display:none;"></button>
             </div>
                 
                 <div class="system-btns">
@@ -116,6 +125,21 @@
             <div id="shop-windWalk" class="shop-item">
                 <span>🌪️ 技能書：風行 (500g)</span>
                 <button onclick="buyItem('windWalk_book')">購買</button>
+            </div>
+            <div id="shop-holyLight" class="shop-item" style="display: none; border-color: #f1c40f;">
+                <span style="color: #f1c40f;">✨ 轉生秘技：聖光 (1,000,000g)</span>
+                <button onclick="buyItem('holyLight_book')" style="background-color: #f39c12;">購買</button>
+            </div>
+            <div id="shop-blackHole" class="shop-item" style="display: none; border-color: #8e44ad;">
+                <span style="color: #9b59b6;">🌌 3轉神技：虛空黑洞 (100,000,000g)</span>
+                <button onclick="buyItem('blackHole_book')" style="background-color: #8e44ad;">購買</button>
+            </div>
+            <div id="shop-upg-blackHole" class="shop-item" style="display: none; border-color: #8e44ad;">
+                <span id="blackHole-upg-text" style="color: #9b59b6;">🌌 升級黑洞</span>
+                <div>
+                    <button onclick="buyItem('upgrade_blackHole')" style="background-color: #8e44ad;">升級</button>
+                    <button onclick="buyItem('max_upgrade_blackHole')" style="background-color: #9b59b6; font-weight: bold;">MAX</button>
+                </div>
             </div>
             <div class="shop-item">
                 <span>📿 守護十字架 (300g)</span>
@@ -164,6 +188,26 @@
                 <div>
                     <button onclick="buyItem('upgrade_windWalk')">升級</button>
                     <button onclick="buyItem('max_upgrade_windWalk')" style="background-color: #1abc9c; font-weight: bold; border-color: #16a085;">MAX</button>
+                </div>
+            </div>
+            <div id="shop-upg-holyLight" class="shop-item" style="display: none; border-color: #f1c40f;">
+                <span id="holyLight-upg-text" style="color: #f1c40f;">✨ 升級聖光</span>
+                <div>
+                    <button onclick="buyItem('upgrade_holyLight')" style="background-color: #f39c12;">升級</button>
+                    <button onclick="buyItem('max_upgrade_holyLight')" style="background-color: #e67e22; font-weight: bold;">MAX</button>
+                </div>
+            </div>
+            <div class="shop-item" style="border: 2px dashed #f1c40f; background-color: #2c3e50; margin-top: 15px;">
+                <span id="gacha-text" style="color: #f1c40f;">🎰 傳說裝備轉蛋</span>
+                <div>
+                    <button onclick="rollGacha(1)" style="background-color: #3498db; border-color: #2980b9;">單抽</button>
+                    <button onclick="rollGacha(10)" style="background-color: #9b59b6; font-weight: bold; border-color: #8e44ad;">10 連抽</button>
+                </div>
+                <div style="margin-top: 10px; width: 100%; text-align: right;">
+                    <label style="color: #bdc3c7; font-size: 0.9em; cursor: pointer;">
+                        <input type="checkbox" id="auto-dismantle-cb" onchange="toggleAutoDismantle()"> 
+                        ♻️ 自動分解【稀有 (Rare)】以下的裝備
+                    </label>
                 </div>
             </div>
             <p style="font-size: 0.8em; color: #888; margin-top: 20px;">* 戰鬥期間商店不營業 *</p>
