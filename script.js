@@ -31,12 +31,12 @@ const areas = [
         name: "幽暗森林",
         reqLevel: 1, // 進入需求等級
         monsters: [
-            { name: "綠色史萊姆", hp: 20, maxHp: 20, image: "images/slime.png", atk: [3, 6], def: 1,exp: 25, coin: 25 },
-            { name: "森林哥布林", hp: 40, maxHp: 40, image: "images/goblin.jpg", atk: [6, 12], def: 2,exp: 50, coin: 50 },
-            { name: "地獄小惡魔", hp: 60, maxHp: 60, image: "images/imp.png", atk: [12, 18], def: 5,exp: 75, coin: 75 }
+            { name: "綠色史萊姆", hp: 20, maxHp: 20, image: "images/slime.png", atk: [3, 6], def: 1,exp: 50, coin: 50 },
+            { name: "森林哥布林", hp: 40, maxHp: 40, image: "images/goblin.jpg", atk: [6, 12], def: 2,exp: 80, coin: 100 },
+            { name: "地獄小惡魔", hp: 60, maxHp: 60, image: "images/imp.png", atk: [12, 18], def: 5,exp: 130, coin: 150 }
         ],
         boss: {
-            name: "深淵魔龍", hp: 160, maxHp: 160, image: "images/boss.jpg", atk: [15, 25], def: 10,exp: 150, coin: 150, isBoss: true 
+            name: "深淵魔龍", hp: 160, maxHp: 160, image: "images/boss.jpg", atk: [15, 25], def: 10,exp: 400, coin: 600, isBoss: true 
         }
     },
     {
@@ -44,12 +44,12 @@ const areas = [
         name: "烈焰火山",
         reqLevel: 10, // 🌟 10 級才能解鎖！
         monsters: [
-            { name: "熔岩犬", hp: 120, maxHp: 120, image: "images/hound.png", atk: [20, 35], def: 5,exp: 150, coin: 130 },
-            { name: "火焰精靈", hp: 60, maxHp: 60, image: "images/fire_spirit.png", atk: [30, 45], def: 0,exp: 100, coin: 100 },
-            { name: "火山岩怪", hp: 180, maxHp: 180, image: "images/golem.png", atk: [15, 25], def: 10,exp: 200, coin: 180 }
+            { name: "熔岩犬", hp: 120, maxHp: 120, image: "images/hound.png", atk: [20, 35], def: 5,exp: 130, coin: 150 },
+            { name: "火焰精靈", hp: 60, maxHp: 60, image: "images/fire_spirit.png", atk: [30, 45], def: 0,exp: 1650, coin: 75 },
+            { name: "火山岩怪", hp: 180, maxHp: 180, image: "images/golem.png", atk: [15, 25], def: 10,exp: 200, coin: 225 }
         ],
         boss: {
-            name: "灰燼鳳凰", hp: 400, maxHp: 400, image: "images/fire_boss.png", atk: [40, 60], def: 20,exp: 350, coin: 450, isBoss: true 
+            name: "灰燼鳳凰", hp: 400, maxHp: 400, image: "images/fire_boss.png", atk: [40, 60], def: 20,exp: 500, coin: 900, isBoss: true 
         }
     }
 ];
@@ -139,7 +139,7 @@ function buyItem(item) {
         }
     }
     else if (item === 'upgrade_fireball') {
-        let cost = 200 + (player.skillLevels.fireball * 150);
+        let cost = 150 + (player.skillLevels.fireball * 100);
         if (player.coin >= cost) {
             player.coin -= cost;
             player.skillLevels.fireball++;
@@ -149,7 +149,7 @@ function buyItem(item) {
         }
     }
     else if (item === 'upgrade_lightning') {
-        let cost = 300 + (player.skillLevels.lightning * 200);
+        let cost = 250 + (player.skillLevels.lightning * 150);
         if (player.coin >= cost) {
             player.coin -= cost;
             player.skillLevels.lightning++;
@@ -159,7 +159,7 @@ function buyItem(item) {
         }
     }
     else if (item === 'upgrade_heal') {
-        let cost = 250 + (player.skillLevels.heal * 150);
+        let cost = 200 + (player.skillLevels.heal * 100);
         if (player.coin >= cost) {
             player.coin -= cost;
             player.skillLevels.heal++;
@@ -175,7 +175,7 @@ function buyItem(item) {
         
         // 瞬間計算你可以買幾級
         while (true) {
-            let nextCost = 200 + ((currentLv + levelsGained) * 150);
+            let nextCost = 150 + ((currentLv + levelsGained) * 100);
             if (player.coin >= totalCost + nextCost) {
                 totalCost += nextCost;
                 levelsGained++;
@@ -198,7 +198,7 @@ function buyItem(item) {
         let currentLv = player.skillLevels.lightning;
         
         while (true) {
-            let nextCost = 300 + ((currentLv + levelsGained) * 200);
+            let nextCost = 250 + ((currentLv + levelsGained) * 150);
             if (player.coin >= totalCost + nextCost) {
                 totalCost += nextCost;
                 levelsGained++;
@@ -221,7 +221,7 @@ function buyItem(item) {
         let currentLv = player.skillLevels.heal;
         
         while (true) {
-            let nextCost = 250 + ((currentLv + levelsGained) * 150);
+            let nextCost = 200 + ((currentLv + levelsGained) * 100);
             if (player.coin >= totalCost + nextCost) {
                 totalCost += nextCost;
                 levelsGained++;
@@ -628,7 +628,11 @@ function checkLevelUp() {
 
         player.baseAtk[0] += 2;
         player.baseAtk[1] += 4;
-        player.nextLevelExp = Math.floor(player.nextLevelExp * 1.2);
+        if(player.level >=15) {
+            player.nextLevelExp = Math.floor(100 * Math.pow(player.level, 2));
+        }else{
+            player.nextLevelExp = Math.floor(100 * Math.pow(1.5, player.level - 1));
+        }
         
         addLog(`<b style="color: #f1c40f;">✨ 恭喜升級！目前等級：LV.${player.level}</b>`);
         checkLevelUp(); 
@@ -652,14 +656,13 @@ function explore() {
         currentMonster = { ...currentAreaMonsters[randomIndex] }; 
         currentMonster.atk = [...currentAreaMonsters[randomIndex].atk];
 
-        let hpMultiplier = 1 + (player.level - 1) * 0.3 + Math.pow(player.level/5,2);
-        let expMultiplier = Math.pow(1.1, player.level - 1);
+        let hpMultiplier = Math.pow(player.level, 2)/2 ;
         let atkMultiplier = 1 + (player.level - 1) * 0.25;
-        if(player.level>100) {
-            atkMultiplier = 5 + Math.pow(player.level - 20, 0.5) * 0.1;
-            expMultiplier *= Math.pow(1.2, player.level - 100);
+        let expMultiplier = Math.pow(player.level, 2)/3;
+        if(player.level<15) {
+            expMultiplier = Math.pow(1.5, player.level - 1);
             }
-        let defMultiplier =  Math.pow(1.1, player.level - 1);
+        let defMultiplier =  player.level *0.2;
         currentMonster.maxHp = Math.floor(currentMonster.maxHp * hpMultiplier);
         currentMonster.hp = currentMonster.maxHp; 
         currentMonster.atk[0] = Math.floor(currentMonster.atk[0] * atkMultiplier);
@@ -669,7 +672,7 @@ function explore() {
         let expBonusRate = 1 + (player.expAmulet * 0.1); 
         currentMonster.exp = Math.floor(currentMonster.exp * expMultiplier * expBonusRate);
         let goldBonusRate = 1 + (player.goldAmulet * 0.05); 
-        currentMonster.coin = Math.floor(currentMonster.coin * expMultiplier * goldBonusRate);
+        currentMonster.coin = Math.floor(currentMonster.coin * hpMultiplier * goldBonusRate);
 
         currentMonster.name = `Lv.${player.level} ${currentMonster.name}`;
 
@@ -696,14 +699,13 @@ function spawnBoss() {
     const currentAreaBoss = areas[player.currentArea].boss;
     currentMonster = { ...currentAreaBoss };
     currentMonster.atk = [...currentAreaBoss.atk];
-    let bossexpMultiplier=Math.pow(1.15, player.level - 1);
-    let bossMultiplier = Math.pow(2.2,player.level/5); 
+    let bossexpMultiplier=Math.pow(player.level, 2)/3;
+    let bossMultiplier = Math.pow(player.level, 2); 
     let atkMultiplier = 1 + (player.level - 1) * 0.5;
-    if(player.level>100) {
-        bossexpMultiplier = Math.pow(1.15, 100)*Math.pow(1.2, player.level - 100);
-        atkMultiplier *= Math.pow(1.1, player.level-100) ;
+    if(player.level<=15) {
+        bossexpMultiplier = Math.pow(1.5, player.level - 1);
     }
-    let defMultiplier =  Math.pow(2, player.level /5);
+    let defMultiplier =  Math.pow(player.level, 2)*0.3;
     currentMonster.maxHp = Math.floor(currentMonster.maxHp * bossMultiplier);
     currentMonster.hp = currentMonster.maxHp;
     currentMonster.def = Math.floor((currentMonster.def || 0) * defMultiplier);
@@ -798,7 +800,7 @@ function useFireball() {
     }
     currentMonster.burnDuration = 3; // 持續 3 回合
     // 燃燒傷害：2% 最大血量 (對付高血量魔王神技) + 技能等級的固定傷害
-    currentMonster.burnDmg = Math.floor(currentMonster.maxHp * (0.01+(skillLv * 0.01)))
+    currentMonster.burnDmg = Math.floor(currentMonster.maxHp *1000/(1000+player.skillLevels.fireball));
     player.skills.fireballCD = 4;
     
     if (hits === 2) {
@@ -813,7 +815,7 @@ function useLightning() {
     if (!currentMonster || player.skills.lightningCD > 0) return;
 
     let skillLv = player.skillLevels.lightning;
-    let trueDmg = Math.floor(player.atkRange[1] * (2.5 + (skillLv-1) * 2.0)) + Math.floor(Math.pow(1.1,skillLv ) * 100);
+    let trueDmg = Math.floor(player.atkRange[1] * (2.5 + (skillLv-1) * 3.0)) ;
     
     // 🌟 風行判定邏輯
     let hits = 1;
@@ -901,7 +903,7 @@ function useHeal() {
     if (!currentMonster || player.skills.healCD > 0) return;
 
     let skillLv = player.skillLevels.heal;
-    let healAmount = Math.floor(player.maxHp * (0.4 + skillLv * 0.1)) + Math.floor(player.atkRange[1] * (0.8 + skillLv * 0.2));
+    let healAmount = Math.floor(player.maxHp * (0.4 + (skillLv-1) * 0.2)) + Math.floor(player.atkRange[1] * (1.0 + (skillLv-1) * 0.5));
     
     // 🌟 風行判定邏輯 (治癒也能連擊！)
     let hits = 1;
