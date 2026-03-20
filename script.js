@@ -779,7 +779,6 @@ function checkLevelUp() {
     if (player.exp >= player.nextLevelExp) {
         player.exp -= player.nextLevelExp;
         player.level++;
-        player.maxHp += 20;
         
         if (player.hp < player.maxHp) {
             player.hp = player.maxHp; 
