@@ -1847,7 +1847,88 @@ function deleteSave() {
         location.reload(); 
     }
 }
+// ==========================================
+// 🤖 AI 全自動戰鬥系統核心
+// ==========================================
+let autoBattleInterval = null;
+let isAutoBattling = false;
 
+function toggleAutoBattle() {
+    isAutoBattling = !isAutoBattling;
+    let btn = document.getElementById('auto-battle-btn');
+    
+    if (isAutoBattling) {
+        // 啟動狀態
+        btn.innerText = "🤖 自動戰鬥：ON (運作中)";
+        btn.style.backgroundColor = "#2ecc71"; // 變成亮綠色
+        btn.style.borderColor = "#27ae60";
+        addLog("🤖 <b style='color:#2ecc71; font-size: 1.2em;'>系統接管：AI 全自動戰鬥已啟動！</b>");
+        
+        // 🌟 設定 AI 動作頻率 (1000 = 1秒，可以改成 500 變兩倍速！)
+        autoBattleInterval = setInterval(autoBattleLogic, 1000); 
+    } else {
+        // 關閉狀態
+        btn.innerText = "🤖 自動戰鬥：OFF";
+        btn.style.backgroundColor = "#34495e";
+        btn.style.borderColor = "#2c3e50";
+        addLog("🤖 系統提示：已解除自動控制，切換為手動模式。");
+        
+        clearInterval(autoBattleInterval); // 停止計時器
+    }
+}
+
+// --- 🧠 AI 戰鬥邏輯判斷 (Priority Queue) ---
+function autoBattleLogic() {
+    // 💀 1. 死亡判定：如果死了，自動幫你按復活！
+    if (player.hp <= 0) {
+        revive();
+        return;
+    }
+
+    // 🏕️ 2. 尋找獵物：如果不在戰鬥中，自動按下探險
+    if (!currentMonster) {
+        // 💡 如果你想讓它全自動爬塔，就把 explore() 改成 exploreTower()
+        explore(); 
+        return;
+    }
+
+    // ⚔️ 3. 戰鬥決策樹 (依照優先級施放技能)
+    
+    // 🛡️ 優先級 A：保命第一！血量低於 40% 且治癒術可用，立刻補血
+    if (player.hp < player.maxHp * 50.0 && player.unlockedSkills.heal && player.skills.healCD === 0) {
+        useHeal();
+        return; 
+    }
+    
+    // 🌪️ 優先級 B：開 Buff！如果有風行且沒在 CD，先套上狀態
+    if (player.unlockedSkills.windWalk && player.skills.windWalkCD === 0 && !player.windWalkActive) {
+        useWindWalk();
+        return;
+    }
+
+    // 🌌 優先級 C：毀滅打擊！有黑洞丟黑洞，有聖光丟聖光
+    if (player.unlockedSkills.blackHole && player.skills.blackHoleCD === 0) {
+        useBlackHole();
+        return;
+    }
+    if (player.unlockedSkills.holyLight && player.skills.holyLightCD === 0) {
+        useHolyLight();
+        return;
+    }
+
+    // ⚡🔥 優先級 D：常規輸出
+    if (player.unlockedSkills.lightning && player.skills.lightningCD === 0) {
+        useLightning();
+        return;
+    }
+    if (player.unlockedSkills.fireball && player.skills.fireballCD === 0) {
+        useFireball();
+        return;
+    }
+
+    // 🗡️ 優先級 E：招式全在冷卻中，平A普通攻擊
+    attack();
+}
 // --- 遊戲啟動 ---
 loadGame(); 
 updateUI();
