@@ -1204,7 +1204,33 @@ function monsterTurn() {
 
     player.hp -= finalDmg;
     addLog(`👾 ${currentMonster.name} 反擊，你受到 ${finalDmg} 點傷害。(你抵擋了 ${rawDmg - finalDmg} 點)`);
-    
+    if (player.hp <= 0) {
+        player.hp = 0; // 防止血量變成負的
+        
+        if (currentMonster && currentMonster.isTower) {
+            // 🌟 塔內陣亡特製廣播 (沒有死亡懲罰，只是被踢出去)
+            addLog(`💀 <b style="color:#c0392b; font-size:1.2em;">你在無盡之塔 第 ${player.towerFloor} 層 隕落了...</b>`);
+            addLog("✨ 虛空的強大能量將你遣送回了安全的城鎮。請提升實力後再來挑戰！");
+        } else {
+            addLog("<b style='color:red; font-size:1.2em;'>💀 你倒下了... 請選擇復活。</b>");
+            
+            document.getElementById('battle-actions').style.display = 'none';
+            
+            const exploreBtn = document.getElementById('explore-btn');
+            exploreBtn.style.display = 'inline-block';
+            exploreBtn.innerText = "☠️ 接受命運並復活";
+            exploreBtn.style.backgroundColor = "#e74c3c"; 
+            exploreBtn.onclick = revive; 
+        }
+
+        // 強制結束戰鬥，清空怪物
+        currentMonster = null; 
+        
+        // 刷新畫面並存檔
+        updateUI();
+        saveGame();
+        return; // 中斷後續的戰鬥計算
+    }
     if (player.hp <= 0) {
         player.hp = 0;
         addLog("<b style='color:red; font-size:1.2em;'>💀 你倒下了... 請選擇復活。</b>");
@@ -1752,8 +1778,9 @@ function exploreTower() {
     let floor = player.towerFloor;
     
     // 塔內怪物公式
-    let mHp = Math.floor(500000 * Math.pow(2, floor)); 
+    let mHp = Math.floor(500000 * Math.pow(1.5, floor)); 
     let mAtk = Math.floor(20000 * Math.pow(1.2, floor));
+    let def = Math.floor(1000 * Math.pow(1.15, floor));
     let mExp = 0;
     let mCoin = 0;
 
@@ -1763,6 +1790,7 @@ function exploreTower() {
         maxHp: mHp,
         hp: mHp,
         atk: [mAtk, mAtk ],
+        def: def,
         exp: mExp,
         coin: mCoin,
         isTower: true,
