@@ -956,7 +956,7 @@ function spawnBoss() {
     let expBonusRate = 1 + (maxExpBonus * (player.expAmulet / (player.expAmulet + expK)));
     currentMonster.exp = Math.floor(currentMonster.exp * bossexpMultiplier * expBonusRate);
     let goldBonusRateBoss = 1 + ((player.goldAmulet || 0) * 0.05);
-    currentMonster.coin = Math.floor(currentMonster.coin * bosscoinMultiplier * goldBonusRateBoss)*player.rebirthCount;
+    currentMonster.coin = Math.floor(currentMonster.coin * bosscoinMultiplier * goldBonusRateBoss)*(player.rebirthCount+1);
     currentMonster.name = `💀 領域領主：${currentMonster.name} (Lv.${player.level})`;
 
     const hpFill = document.getElementById('monster-hp-fill');
