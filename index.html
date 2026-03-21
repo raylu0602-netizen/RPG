@@ -74,7 +74,14 @@
 
             <div id="controls">
                 <button id="explore-btn" onclick="explore()" class="btn-main">🧭 開始探險</button>
-                
+                <div id="tower-container" style="display:none; margin-top: 20px; padding: 15px; border: 2px solid #e74c3c; background-color: #2c3e50; text-align: center; border-radius: 8px;">
+                    <h3 style="color: #e74c3c; margin-top: 0; font-size: 1.5em;">🗼 虛空無盡之塔</h3>
+                    <p style="color: #bdc3c7; font-size: 0.9em;">只有觸及高維境界的轉生者才能踏入的絕對禁地。</p>
+                    <p id="tower-floor-text" style="color: #f1c40f; font-weight: bold; font-size: 1.2em;">目前層數：第 1 層</p>
+                    <button onclick="exploreTower()" style="background-color: #c0392b; color: white; padding: 12px 25px; font-size: 1.2em; font-weight: bold; border: 2px solid #e74c3c; border-radius: 5px; cursor: pointer;">
+                        ⚔️ 挑戰本層守衛
+                    </button>
+                </div>
                 <div id="battle-actions" style="display: none;">
                 <button onclick="attack()" class="btn-attack">⚔️ 普通攻擊</button>
                 <button id="fireball-btn" onclick="useFireball()" class="btn-skill">🔥 火球術</button>
@@ -213,7 +220,7 @@
             <p style="font-size: 0.8em; color: #888; margin-top: 20px;">* 戰鬥期間商店不營業 *</p>
         </aside>
     </div>
-
+    
     <script src="script.js"></script>
 </body>
 </html>

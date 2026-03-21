@@ -22,7 +22,9 @@ let player = {
     extraDEF: 0,
     baseMaxHp: 100,
     currentArea: 0,
-    rebirthCount: 0
+    rebirthCount: 0,
+    towerFloor: 1,
+    maxTowerFloor: 1
 };
 
 // --- 🗺️ 世界地圖與怪物設定 ---
@@ -486,6 +488,8 @@ function updateUI() {
     if (player.skills.blackHoleCD === undefined) player.skills.blackHoleCD = 0;
     if (player.unlockedSkills.blackHole === undefined) player.unlockedSkills.blackHole = false;
     if (player.skillLevels.blackHole === undefined) player.skillLevels.blackHole = 1;
+    if (player.towerFloor === undefined) player.towerFloor = 1;
+    if (player.maxTowerFloor === undefined) player.maxTowerFloor = 1;
     
     // 順便把轉生次數顯示在畫面上 (如果你有在 HTML 寫玩家名字，可以接在名字後面)
     document.getElementById('player-level').innerText = `Lv.${player.level} (轉生: ${player.rebirthCount})`;
@@ -649,28 +653,79 @@ function updateUI() {
     const shopHl = document.getElementById('shop-heal');
     if (shopHl) shopHl.style.display = player.unlockedSkills.heal ? 'none' : 'flex';
 
-    const imgElement = document.getElementById('monster-img');
-    const placeholder = document.getElementById('placeholder-text');
+// ==========================================
+    // 🌟 UI 狀態管理：戰鬥中 vs 非戰鬥中
+    // ==========================================
+    // ==========================================
+    // 🌟 UI 狀態管理：戰鬥中 vs 非戰鬥中
+    // ==========================================
+    let monsterNameEl = document.getElementById('monster-name');
+    let monsterImgEl = document.getElementById('monster-img'); // 對接你的 img ID
+    let placeholderTextEl = document.getElementById('placeholder-text'); // 對接你的提示文字
+    let monsterHpEl = document.getElementById('monster-hp'); // 對接你的血量文字
+    let monsterHpFillEl = document.getElementById('monster-hp-fill'); // 對接你的血條
     
+    let exploreBtn = document.getElementById('explore-btn'); 
+    let battleActions = document.getElementById('battle-actions'); 
+    let towerContainer = document.getElementById('tower-container');
+
     if (currentMonster) {
-        document.getElementById('monster-hp').innerText = `${currentMonster.hp} / ${currentMonster.maxHp}`;
-        document.getElementById('monster-hp-fill').style.width = (currentMonster.hp / currentMonster.maxHp * 100) + "%";
-        if(imgElement) {
-            imgElement.src = currentMonster.image;
-            imgElement.style.display = 'block';
+        // --- ⚔️ 狀態：戰鬥中 ---
+        if (monsterNameEl) monsterNameEl.innerText = currentMonster.name;
+        
+        // 顯示圖片，隱藏「點擊下方按鈕...」提示
+        if (monsterImgEl) {
+            monsterImgEl.src = currentMonster.image; 
+            // 如果你原本的 CSS 是置中，這裡通常用 'block' 或是原本就留空讓 CSS 控制
+            monsterImgEl.style.display = 'block'; 
         }
-        if(placeholder) placeholder.style.display = 'none';
+        if (placeholderTextEl) placeholderTextEl.style.display = 'none';
+        
+        // 🌟 啟動血量文字與血條動畫
+        if (monsterHpEl) monsterHpEl.innerText = `${currentMonster.hp} / ${currentMonster.maxHp}`;
+        if (monsterHpFillEl) {
+            let hpPercent = Math.max(0, (currentMonster.hp / currentMonster.maxHp) * 100);
+            monsterHpFillEl.style.width = hpPercent + "%";
+        }
+        
+        // 隱藏非戰鬥按鈕，顯示戰鬥技能
+        if (exploreBtn) exploreBtn.style.display = 'none';
+        if (towerContainer) towerContainer.style.display = 'none';
+        if (battleActions) battleActions.style.display = 'flex'; 
+
     } else {
-        document.getElementById('monster-hp').innerText = "休息中";
-        document.getElementById('monster-hp-fill').style.width = "0%";
-        if(imgElement) imgElement.style.display = 'none';
-        if(placeholder) placeholder.style.display = 'block';
+        // --- 🏕️ 狀態：準備探險 (非戰鬥) ---
+        if (monsterNameEl) monsterNameEl.innerText = "🌲 準備探險...";
+        
+        // 隱藏圖片，顯示「點擊下方按鈕...」提示
+        if (monsterImgEl) {
+            monsterImgEl.src = ""; 
+            monsterImgEl.style.display = 'none'; 
+        }
+        if (placeholderTextEl) placeholderTextEl.style.display = 'block';
+
+        // 🌟 恢復休息中狀態，血條歸零
+        if (monsterHpEl) monsterHpEl.innerText = "休息中";
+        if (monsterHpFillEl) monsterHpFillEl.style.width = "0%";
+
+        // 隱藏戰鬥技能，顯示探險與爬塔按鈕
+        if (battleActions) battleActions.style.display = 'none';
+        if (exploreBtn) exploreBtn.style.display = 'inline-block'; 
+        
+        // 判斷是否要顯示爬塔面板
+        if (towerContainer) {
+            if (player.rebirthCount >= 1) {
+                towerContainer.style.display = 'block';
+                let floorText = document.getElementById('tower-floor-text');
+                if (floorText) {
+                    floorText.innerHTML = `目前層數：第 ${player.towerFloor} 層 <br><span style="font-size: 0.8em; color: #bdc3c7;">(歷史最高：第 ${player.maxTowerFloor} 層)</span>`;
+                }
+            } else {
+                towerContainer.style.display = 'none';
+            }
+        }
     }
 
-    const exploreBtn = document.getElementById('explore-btn');
-    if(exploreBtn && currentMonster === null && player.hp > 0) {
-        exploreBtn.innerText = `🧭 開始探險 (💰 ${player.coin})`;
-    }
     // --- 🌟 更新獨立裝備欄 (Paper Doll) ---
     const eqWeaponElem = document.getElementById('equipped-weapon');
     const eqArmorElem = document.getElementById('equipped-armor');
@@ -744,6 +799,12 @@ function updateUI() {
             holyBtn.innerText = player.skills.holyLightCD > 0 ? `✨ CD ${player.skills.holyLightCD}` : "✨ 聖光";
         }
     }
+        
+    // 🌟 升級這裡：同時顯示「目前層數」與「歷史最高層數」
+    let floorText = document.getElementById('tower-floor-text');
+        if (floorText) {
+        floorText.innerHTML = `目前層數：第 ${player.towerFloor} 層 <br><span style="font-size: 0.8em; color: #bdc3c7;">(歷史最高：第 ${player.maxTowerFloor} 層)</span>`;
+        }
     renderInventory();
     renderAreaSelector();
 }
@@ -1205,8 +1266,20 @@ function checkBattle() {
     if (currentMonster.hp <= 0) {
         currentMonster.hp = 0;
         if (sounds.kill) sounds.kill.play().catch(e => {});
-        
-        if (currentMonster.isBoss) {
+        if (currentMonster.isTower) {
+                addLog(`🗼 <b style="color:#f1c40f; font-size: 1.3em;">恭喜突破無盡之塔 第 ${player.towerFloor} 層！</b>`);
+                
+                // 爬塔成功獎勵：永久獲得大量屬性！
+                let towerBonusAtk = player.towerFloor * 50;
+                let towerBonusDef = player.towerFloor * 50;
+                player.extraATK += towerBonusAtk;
+                player.extraDEF += towerBonusDef;
+                
+                addLog(`✨ 吸收了本層的虛空精華，永久獲得 <b style="color:#e74c3c;">ATK +${towerBonusAtk}</b>、<b style="color:#3498db;">DEF +${towerBonusDef}</b>！`);
+                
+                player.towerFloor++; // 層數推進
+            }
+        else if (currentMonster.isBoss) {
             player.bossDefeatedLevel = player.level; 
             addLog(`<b style='color: #f39c12;'>🎉 難以置信！你擊敗了魔王，獲得了豐厚的獎勵！</b>`);
             const hpFill = document.getElementById('monster-hp-fill');
@@ -1625,13 +1698,16 @@ function performRebirth() {
     if (!confirm("⚠️ 警告：這將會重置你的等級、屬性、裝備、金幣與護符（保留技能解鎖狀態）。但你會獲得永久的成長倍率加成！確定要轉生嗎？")) {
         return;
     }
-
+    if (player.maxTowerFloor === undefined) player.maxTowerFloor = 1;
+    if (player.towerFloor > player.maxTowerFloor) {
+        player.maxTowerFloor = player.towerFloor;
+    }
     // 🌟 1. 轉生次數 +1
     player.rebirthCount++;
     
     // 🌟 2. 殘酷地重置一切 (保留技能、轉生次數、自動分解設定)
     let rebirthMultiplier = 1 + player.rebirthCount; // 1轉=2倍基礎, 2轉=3倍基礎...
-
+    player.towerFloor = 1;
     player.level = 1;
     player.exp = 0;
     player.nextLevelExp = 100;
@@ -1664,6 +1740,53 @@ function performRebirth() {
     updateUI();
     renderInventory();
     saveGame();
+}
+// --- 🗼 虛空無盡之塔挑戰 ---
+// --- 🗼 虛空無盡之塔挑戰 (修復破圖與按鈕問題) ---
+function exploreTower() {
+    if (player.hp <= 0) {
+        addLog("❌ 你已經重傷，請先使用治癒術恢復體力！");
+        return;
+    }
+
+    let floor = player.towerFloor;
+    
+    // 塔內怪物公式
+    let mHp = Math.floor(500000 * Math.pow(2, floor)); 
+    let mAtk = Math.floor(20000 * Math.pow(1.2, floor));
+    let mExp = 0;
+    let mCoin = 0;
+
+    // 🌟 1. 補上 image 屬性，防禦破圖 (這裡幫你找了一個霸氣的惡魔圖示)
+    currentMonster = {
+        name: `🗼 虛空守衛 (第${floor}層)`,
+        maxHp: mHp,
+        hp: mHp,
+        atk: [mAtk, mAtk ],
+        exp: mExp,
+        coin: mCoin,
+        isTower: true,
+        image: "images/void_guard.jpg" 
+    };
+
+    // 🌟 2. 強制切換戰鬥介面 (隱藏探險按鈕，顯示技能按鈕)
+    let exploreBtn = document.getElementById('explore-btn'); // 你的探險按鈕 ID
+    let battleActions = document.getElementById('battle-actions'); // 你的戰鬥按鈕區塊 ID
+    
+    if (exploreBtn) exploreBtn.style.display = 'none';
+    if (battleActions) battleActions.style.display = 'flex'; // 或 'block' 依你原本的設定
+
+    // 🌟 3. 強制更新怪物名稱與圖片 UI (防止畫面卡在「準備探險...」)
+    let monsterNameEl = document.getElementById('monster-name');
+    let monsterImgEl = document.getElementById('monster-image');
+    if (monsterNameEl) monsterNameEl.innerText = currentMonster.name;
+    if (monsterImgEl) monsterImgEl.src = currentMonster.image;
+
+    addLog(`<div style="border-top: 1px dashed #e74c3c; margin: 10px 0;"></div>`);
+    addLog(`🗼 <b style="color:#e74c3c; font-size: 1.2em;">你踏入了無盡之塔 第 ${floor} 層！</b>`);
+    addLog(`💀 恐怖的 ${currentMonster.name} 降臨了！(血量: ${mHp}, 攻擊力: ${mAtk})`);
+    
+    updateUI();
 }
 function deleteSave() {
     if (confirm("確定要刪除所有冒險進度嗎？這無法還原！")) {
