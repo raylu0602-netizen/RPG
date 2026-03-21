@@ -869,6 +869,8 @@ function checkLevelUp() {
 }
 
 function explore() {
+    if (currentMonster) return; 
+
     const shopContainer = document.getElementById('shop-container');
     if(shopContainer) shopContainer.style.display = 'none';
     
@@ -918,7 +920,7 @@ function explore() {
         let baseFound = Math.floor(Math.random() * 10) + 5;
         let finalFound = Math.floor(baseFound * (1 + (player.level - 1) * 0.2));
         let goldBonusRate = 1 + (player.goldAmulet * 0.05);
-        finalFound = Math.floor(finalFound * goldBonusRate);
+        finalFound = Math.floor(finalFound * goldBonusRate*(player.rebirthCount+1));
         
         player.coin += finalFound;
         addLog(`💰 你在路邊撿到了 ${finalFound} 枚金幣！`);
@@ -1516,7 +1518,7 @@ function revive() {
     player.windWalkActive = false;
 
     const exploreBtn = document.getElementById('explore-btn');
-    exploreBtn.innerText = `🧭 開始探險 (💰 ${player.coin})`;
+    exploreBtn.innerText = `🧭 開始探險 `;
     exploreBtn.style.backgroundColor = ""; 
     exploreBtn.onclick = explore; 
 
@@ -1690,7 +1692,7 @@ function rollGacha(times) {
         }
     } else {
         // 10 連抽結算
-        let logMsg = `🎰 花費 ${totalCost} 金幣進行了 10 連抽！`;
+        let logMsg = `🎰 花費 ${totalCost} 金幣進行了 ${times} 連抽！`;
         if (missCount > 0) logMsg += ` (其中 <b style="color:#e74c3c;">${missCount}</b> 次【謝謝惠顧】)`;
         addLog(logMsg);
         
@@ -1710,6 +1712,22 @@ function rollGacha(times) {
     updateUI(); 
     renderInventory(); 
     saveGame();
+}
+// --- 🎰 轉蛋 MAX 系統 (含防卡死安全鎖) ---
+function rollGachaMax() {
+    let costPerPull = 1000 * player.level; 
+    let maxAffordablePulls = Math.floor(player.coin / costPerPull); // 計算你現在的錢能抽幾次
+
+    if (maxAffordablePulls <= 0) {
+        addLog(`❌ 金幣不足！轉蛋 1 次需要 ${costPerPull} 金幣。`);
+        return;
+    }
+
+    // 🌟 終極防護鎖：就算你有錢抽一億次，為了不讓瀏覽器崩潰，一次最多只執行 1000 抽！
+    let actualPulls = Math.min(maxAffordablePulls, 1000); 
+
+    // 呼叫原本寫好的轉蛋邏輯
+    rollGacha(actualPulls);
 }
 // --- ♻️ 切換自動分解設定 ---
 function toggleAutoDismantle() {
@@ -1775,10 +1793,12 @@ function performRebirth() {
 // --- 🗼 虛空無盡之塔挑戰 ---
 // --- 🗼 虛空無盡之塔挑戰 (修復破圖與按鈕問題) ---
 function exploreTower() {
+    if (currentMonster) return;
     if (player.hp <= 0) {
         addLog("❌ 你已經重傷，請先使用治癒術恢復體力！");
         return;
     }
+
 
     let floor = player.towerFloor;
     
