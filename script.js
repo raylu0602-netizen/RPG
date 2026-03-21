@@ -559,6 +559,11 @@ function updateUI() {
     document.getElementById('player-exp').innerText = `${player.exp} / ${player.nextLevelExp}`;
     document.getElementById('player-exp-fill').style.width = (player.exp / player.nextLevelExp * 100) + "%";
     document.getElementById('player-coin-display').innerText = player.coin;
+    let shopCoinEl = document.getElementById('shop-coin-display');
+    if (shopCoinEl) {
+        // 使用 toLocaleString() 可以幫數字加上千位數逗號，例如 100,000,000，看起來更直覺！
+        shopCoinEl.innerText = player.coin.toLocaleString(); 
+    }
     
     const amuletDisplay = document.getElementById('player-amulet-display');
     if(amuletDisplay) amuletDisplay.innerText = player.protectionAmulet;
@@ -901,7 +906,7 @@ function explore() {
         let expBonusRate = 1 + (maxExpBonus * (player.expAmulet / (player.expAmulet + expK)));
         currentMonster.exp = Math.floor(currentMonster.exp * expMultiplier * expBonusRate);
         let goldBonusRate = 1 + (player.goldAmulet * 0.05); 
-        currentMonster.coin = Math.floor(currentMonster.coin * coinMultiplier * goldBonusRate)*player.rebirthCount;
+        currentMonster.coin = Math.floor(currentMonster.coin * coinMultiplier * goldBonusRate)*(player.rebirthCount+1);
 
         currentMonster.name = `Lv.${player.level} ${currentMonster.name}`;
 
