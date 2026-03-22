@@ -1964,7 +1964,7 @@ function performRebirth() {
     player.baseDef = 0;
     player.extraATK = 0;
     player.extraDEF = 0;
-    
+    player.enhanceStones /=2;
     player.coin = 0;
     player.expAmulet = 0;
     player.goldAmulet = 0;
