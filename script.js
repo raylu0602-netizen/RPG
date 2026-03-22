@@ -1473,16 +1473,26 @@ function renderInventory() {
         let enhanceText = currentLv > 0 ? ` <span style="color: #f1c40f; text-shadow: 0 0 5px #f1c40f;">+${currentLv}</span>` : "";
         let itemNameDisplay = `${item.name}${enhanceText}`;
 
-        let successRate = ((1 / (1 + currentLv)) * 100).toFixed(1);
+        let successRate = ((10 / (10 + currentLv)) * 100).toFixed(1);
+
+        // 🌟 基本的 1 次強化按鈕
+        let enhanceBtnHTML = `<button style="background-color: #8e44ad; color: white; padding: 2px 5px; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px;" onclick="enhanceItem(${index})">
+            ➕ 強化 (1石 | ${successRate}%)
+        </button>`;
+
+        // 🌟🌟🌟 新增：如果強化石大於等於 100 顆，才額外顯示「百連強化」按鈕！ 🌟🌟🌟
+        if (player.enhanceStones >= 100) {
+            enhanceBtnHTML += `<button style="background-color: #e74c3c; color: white; padding: 2px 5px; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px;" onclick="enhanceItem100(${index})">
+                🔥 百連 (100石)
+            </button>`;
+        }
 
         itemDiv.innerHTML = `
             <span style="color: ${color}; font-weight: bold;">${itemNameDisplay} (${statText})</span>
             <div style="margin-top: 5px;">
                 ${equipActionButton} 
                 <button class="btn-dismantle" onclick="dismantleItem(${index})">分解</button>
-                <button style="background-color: #8e44ad; color: white; padding: 2px 5px; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px;" onclick="enhanceItem(${index})">
-                    ➕ 強化 (1石 | ${successRate}%)
-                </button>
+                ${enhanceBtnHTML}
             </div>
         `;
 
@@ -1503,6 +1513,67 @@ function renderInventory() {
     if (armorCount === 0) {
         armorList.innerHTML = '<p style="color: #666; font-size: 0.9em; margin: 0;">(防具庫空空如也...)</p>';
     }
+}
+
+// --- 🔥 裝備百連強化系統 (高速結算版) ---
+function enhanceItem100(index) {
+    const item = player.inventory[index];
+    if (!item) return;
+
+    if (player.enhanceStones < 100) {
+        addLog(`❌ 強化石不足！百連強化需要 100 顆強化石。`);
+        return;
+    }
+
+    // 一口氣扣除 100 顆石頭
+    player.enhanceStones -= 100;
+
+    let startLv = item.enhanceLevel || 0;
+    let successCount = 0;
+    let totalBoost = 0;
+
+    // 🌟 在背景瞬間跑 100 次強化判定
+    for (let i = 0; i < 100; i++) {
+        let currentLv = item.enhanceLevel || 0;
+        
+        // 每次強化時，系統都會重新計算當下等級的成功率
+        let successRate = (10 / (10 + currentLv)) * 100; 
+        let roll = Math.random() * 100;
+        
+        if (roll <= successRate) {
+            successCount++; // 記錄成功次數
+            item.enhanceLevel = currentLv + 1;
+
+            // 計算這次成功加了多少數值
+            let boost = 0;
+            if (item.type === 'weapon') {
+                boost = Math.floor(item.atkBonus * 0.1) + 50;
+                item.atkBonus += boost;
+            } else {
+                boost = Math.floor(item.defBonus * 0.1) + 50;
+                item.defBonus += boost;
+            }
+            totalBoost += boost; // 累加總成長數值
+        }
+    }
+
+    let endLv = item.enhanceLevel || 0;
+
+    // --- 📊 百連結算超華麗廣播 ---
+    if (successCount > 0) {
+        let statName = item.type === 'weapon' ? '攻擊力' : '防禦力';
+        let statColor = item.type === 'weapon' ? '#e74c3c' : '#3498db';
+        
+        addLog(`🔥 <b style="color:#e74c3c; font-size:1.1em;">百連強化大結算！</b> 【${item.name}】在火爐中千錘百鍊，成功了 <b style="color:#f1c40f;">${successCount}</b> 次！`);
+        addLog(`✨ 等級從 +${startLv} 飆升至 <b style="color:#f1c40f; font-size:1.2em;">+${endLv}</b>！(${statName}總共暴增了 <b style="color:${statColor}; font-size:1.2em;">${totalBoost.toLocaleString()}</b>)`);
+    } else {
+        // 萬一 100 次全失敗的超慘非洲人廣播
+        addLog(`💥 <b style="color:#7f8c8d;">百連強化大暴死...</b> 砸了 100 顆強化石，【${item.name}】竟然連一次都沒成功... (維持 +${startLv})`);
+    }
+
+    updateUI();
+    renderInventory();
+    saveGame();
 }
 
 // --- 🔨 無限裝備強化系統 (機率檢定版) ---
