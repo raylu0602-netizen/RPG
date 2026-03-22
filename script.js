@@ -694,7 +694,19 @@ function updateUI() {
     let statTotalGoldEl = document.getElementById('stat-total-gold');
 
     if (statKillsEl && player.stats) statKillsEl.innerText = formatter.format(player.stats.kills);
-    if (statMaxDmgEl && player.stats) statMaxDmgEl.innerText = formatter.format(player.stats.maxDamage);
+    if (statMaxDmgEl && player.stats) {
+        let maxD = player.stats.maxDamage;
+        
+        // 如果傷害突破 1 兆 (1,000,000,000,000，也就是 1e12)，啟動指數顯示
+        if (maxD >= 1e12) {
+            // toExponential(2) 會保留小數點後兩位，例如 1.52e+24
+            // 為了讓遊戲看起來更帥，我們把 'e+' 換成大寫的 ' E'
+            statMaxDmgEl.innerText = maxD.toExponential(2).replace('e+', ' E'); 
+        } else {
+            // 兆以下的傷害，還是用原本的 K, M, B 格式
+            statMaxDmgEl.innerText = formatter.format(maxD);
+        }
+    }
     if (statTotalGoldEl && player.stats) statTotalGoldEl.innerText = formatter.format(player.stats.totalGold);
 
     // 更新強化石 UI
