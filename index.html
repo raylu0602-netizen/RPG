@@ -56,6 +56,14 @@
                     ✨ 確認轉生 (需要 Lv.1000)
                 </button>
             </div>
+            <div id="stats-container" style="margin-top: 20px; padding: 15px; border: 2px solid #8e44ad; background-color: #2c3e50; border-radius: 8px;">
+                <h3 style="color: #9b59b6; margin-top: 0; text-align: center;">📊 生涯數據統計</h3>
+                <ul style="list-style-type: none; padding: 0; margin: 0; color: #ecf0f1; font-size: 1.1em; line-height: 1.8;">
+                    <li>💀 總擊殺怪數：<span id="stat-kills" style="color: #e74c3c; font-weight: bold;">0</span></li>
+                    <li>💥 單發最高傷害：<span id="stat-max-dmg" style="color: #f39c12; font-weight: bold;">0</span></li>
+                    <li>💰 生涯總賺取：<span id="stat-total-gold" style="color: #f1c40f; font-weight: bold;">0</span></li>
+                </ul>
+            </div>
         </aside>
 
         <main class="main-content">
@@ -148,6 +156,15 @@
             <div id="shop-blackHole" class="shop-item" style="display: none; border-color: #8e44ad;">
                 <span style="color: #9b59b6;">🌌 3轉神技：虛空黑洞 (100,000,000g)</span>
                 <button onclick="buyItem('blackHole_book')" style="background-color: #8e44ad;">購買</button>
+            </div>
+            <div style="margin-top: 15px; padding: 10px; background-color: #34495e; border-radius: 5px; border-left: 5px solid #3498db;">
+                <span style="font-size: 1.1em; color: #ecf0f1;">💎 裝備強化石 (單價 1,000g)</span>
+                <br>
+                <span style="font-size: 0.9em; color: #bdc3c7;">目前擁有：<b id="stone-display" style="color: #3498db;">0</b> 顆</span>
+                <div style="margin-top: 5px;">
+                    <button onclick="buyItem('enhance_stone')" style="background-color: #3498db; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;">購買 1 顆</button>
+                    <button onclick="buyItem('max_enhance_stone')" style="background-color: #e74c3c; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;">🔥 MAX 狂買</button>
+                </div>
             </div>
             <div class="shop-item">
                 <span>📿 守護十字架 (300g)</span>

@@ -24,7 +24,9 @@ let player = {
     currentArea: 0,
     rebirthCount: 0,
     towerFloor: 1,
-    maxTowerFloor: 1
+    maxTowerFloor: 1,
+    stats: { kills: 0, maxDamage: 0, totalGold: 0 },
+    enhanceStones: 0
 };
 
 // --- 🗺️ 世界地圖與怪物設定 ---
@@ -416,6 +418,29 @@ function buyItem(item) {
             addLog(`❌ 金幣不足！`);
         }
     }
+    // 🌟🌟🌟 購買強化石 🌟🌟🌟
+    else if (item === 'enhance_stone') {
+        let cost = 1000; // 一顆 1,000 金幣
+        if (player.coin >= cost) {
+            player.coin -= cost;
+            player.enhanceStones++;
+            addLog("💎 花費了 1,000 金幣，購買了 1 顆【強化石】！");
+        } else {
+            addLog("❌ 金幣不足！強化石需要 1,000 金幣。");
+        }
+    }
+    // 🌟🌟🌟 MAX 狂買強化石 🌟🌟🌟
+    else if (item === 'max_enhance_stone') {
+        let cost = 1000;
+        let maxBuy = Math.floor(player.coin / cost);
+        if (maxBuy > 0) {
+            player.coin -= (maxBuy * cost);
+            player.enhanceStones += maxBuy;
+            addLog(`💎 豪擲 ${maxBuy * cost} 金幣，一口氣狂買了 <b style="color:#3498db;">${maxBuy}</b> 顆【強化石】！`);
+        } else {
+            addLog("❌ 金幣不足！連 1 顆強化石都買不起。");
+        }
+    }
     saveGame(); 
     updateUI(); 
 }
@@ -490,6 +515,9 @@ function updateUI() {
     if (player.skillLevels.blackHole === undefined) player.skillLevels.blackHole = 1;
     if (player.towerFloor === undefined) player.towerFloor = 1;
     if (player.maxTowerFloor === undefined) player.maxTowerFloor = 1;
+    if (!player.stats) player.stats = { kills: 0, maxDamage: 0, totalGold: 0 };
+    // 🌟 強化石系統存檔保護
+    if (player.enhanceStones === undefined) player.enhanceStones = 0;
     
     // 順便把轉生次數顯示在畫面上 (如果你有在 HTML 寫玩家名字，可以接在名字後面)
     document.getElementById('player-level').innerText = `Lv.${player.level} (轉生: ${player.rebirthCount})`;
@@ -657,6 +685,23 @@ function updateUI() {
     if (shopLt) shopLt.style.display = player.unlockedSkills.lightning ? 'none' : 'flex';
     const shopHl = document.getElementById('shop-heal');
     if (shopHl) shopHl.style.display = player.unlockedSkills.heal ? 'none' : 'flex';
+
+    // 🌟 更新統計面板 (使用內建的縮寫格式，例如 1.5M, 2.3B, 1.2T)
+    const formatter = new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 2 });
+    
+    let statKillsEl = document.getElementById('stat-kills');
+    let statMaxDmgEl = document.getElementById('stat-max-dmg');
+    let statTotalGoldEl = document.getElementById('stat-total-gold');
+
+    if (statKillsEl && player.stats) statKillsEl.innerText = formatter.format(player.stats.kills);
+    if (statMaxDmgEl && player.stats) statMaxDmgEl.innerText = formatter.format(player.stats.maxDamage);
+    if (statTotalGoldEl && player.stats) statTotalGoldEl.innerText = formatter.format(player.stats.totalGold);
+
+    // 更新強化石 UI
+    let stoneDisplay = document.getElementById('stone-display');
+    if (stoneDisplay) {
+        stoneDisplay.innerText = player.enhanceStones.toLocaleString();
+    }
 
 // ==========================================
     // 🌟 UI 狀態管理：戰鬥中 vs 非戰鬥中
@@ -924,6 +969,7 @@ function explore() {
         
         player.coin += finalFound;
         addLog(`💰 你在路邊撿到了 ${finalFound} 枚金幣！`);
+        player.stats.totalGold += finalFound;
         saveGame();
     }
     updateUI();
@@ -1007,6 +1053,7 @@ function attack() {
     } else {
         addLog(`⚔️ 你攻擊了，造成 ${totalFinalDmg} 點傷害。(被抵擋了 ${totalBlocked} 點)`);
     }
+    recordDamage(totalFinalDmg);
     checkBattle();
 }
 
@@ -1049,6 +1096,7 @@ function useFireball() {
     } else {
         addLog(`🔥 <b style="color:#e67e22;">火球術！</b> 造成了驚人的 <b style="color:#e74c3c; font-size:1.1em;">${totalFinalDmg}</b> 點傷害！(被抵擋了 ${totalBlocked} 點)`);
     }
+    recordDamage(totalFinalDmg);
     checkBattle();
 }
 
@@ -1081,6 +1129,7 @@ function useLightning() {
     } else {
         addLog(`⚡ <b style="color:#9b59b6;">閃電斬！</b> <span style="background-color: #f1c40f; color: black; padding: 0 4px; border-radius: 3px; font-weight: bold;">無視防禦</span> 對敵人造成了 <b style="color:#e74c3c;">${totalFinalDmg}</b> 點真實傷害！`);
     }
+    recordDamage(totalFinalDmg);
     checkBattle(); 
 }
 function useWindWalk() {
@@ -1130,7 +1179,7 @@ function useHolyLight() {
     } else {
         addLog(`✨ <b style="color:#f1c40f; font-size:1.3em;">【神罰．聖光】</b> 降臨！星辰之力貫穿了 ${currentMonster.name}，造成 <b style="color:#e74c3c; font-size:1.3em;">${totalFinalDmg}</b> 點毀滅性真實傷害！`);
     }
-    
+    recordDamage(totalFinalDmg);
     checkBattle();
 }
 // --- 🌌 3轉專屬神技：虛空黑洞 ---
@@ -1181,7 +1230,7 @@ function useBlackHole() {
         hpFill.style.width = "100%"; 
         document.getElementById('player-hp').innerText = `🛡️ ${player.hp} / ${player.maxHp}`;
     }
-
+    recordDamage(totalFinalDmg);
     checkBattle();
 }
 function monsterTurn() {
@@ -1298,6 +1347,9 @@ function useHeal() {
 function checkBattle() {
     if (currentMonster.hp <= 0) {
         currentMonster.hp = 0;
+        if (!player.stats) player.stats = { kills: 0, maxDamage: 0, totalGold: 0 };
+        player.stats.kills++;
+        player.stats.totalGold += currentMonster.coin;
         if (sounds.kill) sounds.kill.play().catch(e => {});
         if (currentMonster.isTower) {
                 addLog(`🗼 <b style="color:#f1c40f; font-size: 1.3em;">恭喜突破無盡之塔 第 ${player.towerFloor} 層！</b>`);
@@ -1356,6 +1408,14 @@ function checkBattle() {
     updateUI();
 }
 
+// 🌟 記錄最高傷害
+function recordDamage(dmg) {
+    if (!player.stats) player.stats = { kills: 0, maxDamage: 0, totalGold: 0 };
+    if (dmg > player.stats.maxDamage) {
+        player.stats.maxDamage = dmg;
+    }
+}
+
 function renderInventory() {
     const weaponList = document.getElementById('inventory-weapons');
     const armorList = document.getElementById('inventory-armors');
@@ -1409,11 +1469,20 @@ function renderInventory() {
             equipActionButton = `<button class="btn-equip" onclick="equipItem(${index})">裝備</button>`;
         }
         // 🌟🌟🌟 按鈕邏輯結束 🌟🌟🌟
+        let currentLv = item.enhanceLevel || 0;
+        let enhanceText = currentLv > 0 ? ` <span style="color: #f1c40f; text-shadow: 0 0 5px #f1c40f;">+${currentLv}</span>` : "";
+        let itemNameDisplay = `${item.name}${enhanceText}`;
+
+        let successRate = ((1 / (1 + currentLv)) * 100).toFixed(1);
 
         itemDiv.innerHTML = `
-            <span style="color: ${color}; font-weight: bold;">${item.name} (${statText})</span>
-            <div>
-                ${equipActionButton} <button class="btn-dismantle" onclick="dismantleItem(${index})">分解</button>
+            <span style="color: ${color}; font-weight: bold;">${itemNameDisplay} (${statText})</span>
+            <div style="margin-top: 5px;">
+                ${equipActionButton} 
+                <button class="btn-dismantle" onclick="dismantleItem(${index})">分解</button>
+                <button style="background-color: #8e44ad; color: white; padding: 2px 5px; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px;" onclick="enhanceItem(${index})">
+                    ➕ 強化 (1石 | ${successRate}%)
+                </button>
             </div>
         `;
 
@@ -1436,6 +1505,50 @@ function renderInventory() {
     }
 }
 
+// --- 🔨 無限裝備強化系統 (機率檢定版) ---
+// --- 🔨 無限裝備強化系統 (平滑漸進機率版) ---
+function enhanceItem(index) {
+    const item = player.inventory[index];
+    if (!item) return;
+
+    if (player.enhanceStones < 1) {
+        addLog(`❌ 強化石不足！每次強化需要 1 顆強化石。`);
+        return;
+    }
+
+    let currentLv = item.enhanceLevel || 0;
+    
+    // 🌟 終極平滑公式：等級越高，機率越低，但永遠不會歸零
+    let successRate = (1 / (1 + currentLv)) * 100; 
+
+    // 扣除 1 顆強化石
+    player.enhanceStones -= 1;
+
+    // 🎲 產生 0~100 的亂數，並檢查是否落在成功率內
+    let roll = Math.random() * 100;
+    
+    if (roll <= successRate) {
+        // ✅ 強化成功
+        item.enhanceLevel = currentLv + 1;
+
+        if (item.type === 'weapon') {
+            let boost = Math.floor(item.atkBonus * 0.1) + 50;
+            item.atkBonus += boost;
+            addLog(`🔨 <b style="color:#f1c40f; font-size:1.1em;">叮！強化成功！</b> 【${item.name}】發出耀眼光芒，達到了 <b style="color:#f1c40f;">+${item.enhanceLevel}</b>！(攻擊力爆增 <b style="color:#e74c3c;">${boost}</b>)`);
+        } else {
+            let boost = Math.floor(item.defBonus * 0.1) + 50;
+            item.defBonus += boost;
+            addLog(`🔨 <b style="color:#f1c40f; font-size:1.1em;">叮！強化成功！</b> 【${item.name}】變得更加堅不可摧，達到了 <b style="color:#f1c40f;">+${item.enhanceLevel}</b>！(防禦力爆增 <b style="color:#3498db;">${boost}</b>)`);
+        }
+    } else {
+        // ❌ 強化失敗
+        addLog(`💥 <b style="color:#7f8c8d;">強化失敗...</b> 【${item.name}】發出一陣黑煙，強化石碎裂了。(維持 +${currentLv})`);
+    }
+
+    updateUI();
+    renderInventory();
+    saveGame();
+}
 
 function reduceCooldowns() {
     if (player.skills.fireballCD > 0) player.skills.fireballCD--;
