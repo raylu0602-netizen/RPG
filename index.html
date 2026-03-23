@@ -73,6 +73,12 @@
                     <li>💰 生涯總賺取：<span id="stat-total-gold" style="color: #f1c40f; font-weight: bold;">0</span></li>
                 </ul>
             </div>
+            <div id="relic-container" style="margin-top: 20px; padding: 15px; border: 2px solid #f39c12; background-color: #2c3e50; border-radius: 8px;">
+                <h3 style="color: #f1c40f; margin-top: 0; text-align: center;">👑 傳說神器殿堂</h3>
+                
+                <div id="relic-list" style="color: #ecf0f1; font-size: 0.95em; line-height: 1.6; background-color: #34495e; padding: 10px; border-radius: 5px;">
+                    </div>
+            </div>
         </aside>
 
         <main class="main-content">
@@ -118,6 +124,15 @@
                         🔄 重新整理
                     </button>
                     <button onclick="deleteSave()" class="btn-danger">🗑️ 刪存</button>
+                </div>
+                <div style="margin-top: 20px; padding: 10px; background-color: #2c3e50; border-radius: 8px; text-align: center; border: 2px dashed #7f8c8d;">
+                    <h4 style="color: #bdc3c7; margin-top: 0; margin-bottom: 10px;">💾 時空備份系統</h4>
+                    <button onclick="exportSave()" style="background-color: #27ae60; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-right: 10px; transition: 0.2s;">
+                        📤 匯出存檔 (複製代碼)
+                    </button>
+                    <button onclick="importSave()" style="background-color: #e67e22; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s;">
+                        📥 匯入存檔
+                    </button>
                 </div>
                 <div id="area-selector-container" style="display: none; margin-bottom: 15px;">
                     <label for="area-select" style="font-weight: bold; color: #fff;">🗺️ 當前區域：</label>

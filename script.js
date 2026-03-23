@@ -26,7 +26,8 @@ let player = {
     towerFloor: 1,
     maxTowerFloor: 1,
     stats: { kills: 0, maxDamage: 0, totalGold: 0 },
-    enhanceStones: 0
+    enhanceStones: 0,
+    relics: { bloodthirst: false, hourglass: false, greed: false }
 };
 
 // --- 🗺️ 世界地圖與怪物設定 ---
@@ -518,6 +519,20 @@ function updateUI() {
     if (!player.stats) player.stats = { kills: 0, maxDamage: 0, totalGold: 0 };
     // 🌟 強化石系統存檔保護
     if (player.enhanceStones === undefined) player.enhanceStones = 0;
+    // 🌟 神器系統初始化
+    if (!player.relics) player.relics = { bloodthirst: false, hourglass: false, greed: false };
+    if (player.towerFloor > 10 && !player.relics.bloodthirst) {
+        player.relics.bloodthirst = true;
+        addLog(`🎁 <b style="color:#f1c40f; font-size:1.2em;">【系統補償信件】</b> 檢測到您已通關第 10 層，系統自動補發神器：<b style="color:#e74c3c;">🩸 嗜血魔刃</b>！`);
+    }
+    if (player.towerFloor > 30 && !player.relics.hourglass) {
+        player.relics.hourglass = true;
+        addLog(`🎁 <b style="color:#f1c40f; font-size:1.2em;">【系統補償信件】</b> 檢測到您已通關第 30 層，系統自動補發神器：<b style="color:#f39c12;">⏳ 永恆沙漏</b>！`);
+    }
+    if (player.towerFloor > 50 && !player.relics.greed) {
+        player.relics.greed = true;
+        addLog(`🎁 <b style="color:#f1c40f; font-size:1.2em;">【系統補償信件】</b> 檢測到您已通關第 50 層，系統自動補發神器：<b style="color:#2ecc71;">🍀 貪婪之手</b>！`);
+    }
     
     // 順便把轉生次數顯示在畫面上 (如果你有在 HTML 寫玩家名字，可以接在名字後面)
     document.getElementById('player-level').innerText = `Lv.${player.level} (轉生: ${player.rebirthCount})`;
@@ -547,8 +562,8 @@ function updateUI() {
     let playerDefElement = document.getElementById('player-def');
     let defReductionElement = document.getElementById('def-reduction');
     if (playerDefElement && defReductionElement) {
-        playerDefElement.innerText = totalDEF;
-        let reductionPercent = (1 - (1000 / (1000 + totalDEF))) * 100;
+        playerDefElement.innerText = formatBigNumber(totalDEF);
+        let reductionPercent = (1 - (10000 / (10000 + totalDEF))) * 100;
         defReductionElement.innerText = `(減傷 ${reductionPercent.toFixed(1)}%)`;
     }
 
@@ -603,7 +618,7 @@ function updateUI() {
     const atkElement = document.getElementById('player-atk');
     if (atkElement) {
         const bonus = player.extraATK + ((player.equiptment.weapon) ? player.equiptment.weapon.atkBonus : 0);
-        atkElement.innerText = `${player.baseAtk[0]} ~ ${player.baseAtk[1]} (總加成: +${bonus})`;
+        atkElement.innerText = `${formatBigNumber(player.baseAtk[0])} ~ ${formatBigNumber(player.baseAtk[1])} (總加成: +${formatBigNumber(bonus)})`;
     }
 
     const swordPriceElement = document.getElementById('sword-price');
@@ -794,7 +809,7 @@ function updateUI() {
 
     if (eqWeaponElem) {
         if (player.equiptment.weapon) {
-            eqWeaponElem.innerHTML = `<b style="color: #e74c3c;">${player.equiptment.weapon.name}</b> (+${player.equiptment.weapon.atkBonus})`;
+            eqWeaponElem.innerHTML = `<b style="color: #e74c3c;">${player.equiptment.weapon.name}</b> (+${formatBigNumber(player.equiptment.weapon.atkBonus)})`;
         } else {
             eqWeaponElem.innerHTML = `<span style="color: #7f8c8d;">(未裝備)</span>`;
         }
@@ -802,7 +817,7 @@ function updateUI() {
 
     if (eqArmorElem) {
         if (player.equiptment.armor) {
-            eqArmorElem.innerHTML = `<b style="color: #3498db;">${player.equiptment.armor.name}</b> (+${player.equiptment.armor.defBonus})`;
+            eqArmorElem.innerHTML = `<b style="color: #3498db;">${player.equiptment.armor.name}</b> (+${formatBigNumber(player.equiptment.armor.defBonus)})`;
         } else {
             eqArmorElem.innerHTML = `<span style="color: #7f8c8d;">(未裝備)</span>`;
         }
@@ -867,6 +882,36 @@ function updateUI() {
         if (floorText) {
         floorText.innerHTML = `目前層數：第 ${player.towerFloor} 層 <br><span style="font-size: 0.8em; color: #bdc3c7;">(歷史最高：第 ${player.maxTowerFloor} 層)</span>`;
         }
+        // 🌟 更新神器殿堂顯示 (無盡之塔成就版)
+    let relicListEl = document.getElementById('relic-list');
+    if (relicListEl && player.relics) {
+        let html = "";
+        
+        // 🩸 目標：通關第 10 層
+        // (在 updateUI 裡面找到這段並替換)
+        if (player.relics.bloodthirst) {
+            // 🌟 升級文字：加上「無視防禦 (真實傷害)」
+            html += "<li>🩸 <b style='color:#e74c3c;'>嗜血魔刃</b>：普攻造成<b style='color:#726bc0;'>(真實傷害)</b>，並將 50% 傷害轉為生命。</li>";
+        } else {
+            html += "<li style='color:#7f8c8d;'>🔒 <i>未知神器 (通關無盡之塔 第 10 層解鎖)</i></li>";
+        }
+        
+        // ⏳ 目標：通關第 30 層
+        if (player.relics.hourglass) {
+            html += "<li>⏳ <b style='color:#f39c12;'>永恆沙漏</b>：擊殺怪物時，所有技能 CD 額外 -1。</li>";
+        } else {
+            html += "<li style='color:#7f8c8d;'>🔒 <i>未知神器 (通關無盡之塔 第 30 層解鎖)</i></li>";
+        }
+        
+        // 🍀 目標：通關第 50 層
+        if (player.relics.greed) {
+            html += "<li>🍀 <b style='color:#2ecc71;'>貪婪之手</b>：轉蛋有 10% 機率不消耗任何金幣。</li>";
+        } else {
+            html += "<li style='color:#7f8c8d;'>🔒 <i>未知神器 (通關無盡之塔 第 50 層解鎖)</i></li>";
+        }
+        
+        relicListEl.innerHTML = `<ul style='margin:0; padding-left: 20px;'>${html}</ul>`;
+    }
     renderInventory();
     renderAreaSelector();
 }
@@ -1028,10 +1073,10 @@ function spawnBoss() {
 }
 
 // 🌟🌟🌟 全新防禦減傷計算區塊 🌟🌟🌟
+// 🌟🌟🌟 普攻系統 (支援風行連擊 & 嗜血魔刃真傷版) 🌟🌟🌟
 function attack() {
     if (!currentMonster || player.hp <= 0) return;
-    sounds.attack.currentTime = 0;
-    sounds.attack.play().catch(e => console.log("音效未觸發"));
+    if (sounds.attack) { sounds.attack.currentTime = 0; sounds.attack.play().catch(e => {}); }
 
     let rawDmg = Math.floor(Math.random() * (player.atkRange[1] - player.atkRange[0] + 1)) + player.atkRange[0];
     
@@ -1040,13 +1085,16 @@ function attack() {
     let windMultiplier = 1;
     if (player.windWalkActive) {
         hits = 2;
-        // 強化倍率：技能等級越高，第二下的傷害越誇張 (1 + 等級*0.5)
         windMultiplier = 1 + (player.skillLevels.windWalk * 0.5); 
-        player.windWalkActive = false; // 消耗狀態
+        player.windWalkActive = false; 
     }
 
+    // 👑 神器判定：嗜血魔刃 (普攻變為真實傷害)
+    let hasBloodthirst = player.relics && player.relics.bloodthirst;
+    
     let monsterDef = currentMonster.def || 0;
-    let dmgMultiplier = 1000 / (1000 + monsterDef);
+    // 如果有嗜血魔刃，減傷倍率直接變成 1 (無視防禦)！否則照常計算。
+    let dmgMultiplier = hasBloodthirst ? 1 : (10000 / (10000 + monsterDef));
     
     let totalFinalDmg = 0;
     let totalBlocked = 0;
@@ -1060,12 +1108,37 @@ function attack() {
         totalBlocked += (currentRaw - currentFinal);
     }
     
-    if (hits === 2) {
-        addLog(`🌪️ <b style="color:#1abc9c;">【風行連斬】</b> ⚔️ 普攻化作殘影連續打擊！造成 <b style="color:#e74c3c;">${totalFinalDmg}</b> 總傷害！(抵擋 ${totalBlocked} 點)`);
+    // 📊 記錄最高傷害 (防呆版)
+    if (typeof recordDamage === "function") recordDamage(totalFinalDmg);
+
+    // --- ⚔️ 戰鬥廣播與吸血結算 ---
+    if (hasBloodthirst) {
+        // 魔刃專屬：真傷 + 吸血廣播
+        let lifesteal = Math.floor(totalFinalDmg * 0.5);
+        player.hp += lifesteal;
+        
+        if (hits === 2) {
+            addLog(`🌪️ <b style="color:#1abc9c;">【風行連斬】</b> 🩸 <b style="color:#e74c3c;">嗜血真傷！</b> 殘影撕裂防禦，造成 <b style="color:#e74c3c; font-size:1.1em;">${totalFinalDmg}</b> 點真實總傷害，並吸取 <b style="color:#2ecc71;">${lifesteal}</b> 點生命！`);
+        } else {
+            addLog(`🩸 <b style="color:#e74c3c;">【嗜血魔刃】</b> 貫穿了防禦！造成 <b style="color:#e74c3c;">${totalFinalDmg}</b> 點真實傷害，並回復 <b style="color:#2ecc71;">${lifesteal}</b> 點生命！`);
+        }
     } else {
-        addLog(`⚔️ 你攻擊了，造成 ${totalFinalDmg} 點傷害。(被抵擋了 ${totalBlocked} 點)`);
+        // 一般普攻廣播
+        if (hits === 2) {
+            addLog(`🌪️ <b style="color:#1abc9c;">【風行連斬】</b> ⚔️ 普攻化作殘影連續打擊！造成 <b style="color:#e74c3c;">${totalFinalDmg}</b> 總傷害！(抵擋 ${totalBlocked} 點)`);
+        } else {
+            addLog(`⚔️ 你攻擊了，造成 ${totalFinalDmg} 點傷害。(被抵擋了 ${totalBlocked} 點)`);
+        }
     }
-    recordDamage(totalFinalDmg);
+    
+    // 🌟 更新護盾 UI (吸血可能會溢出變成護盾)
+    const hpFill = document.getElementById('player-hp-fill');
+    if (player.hp > player.maxHp && hpFill) {
+        hpFill.style.backgroundColor = "#f1c40f"; 
+        hpFill.style.width = "100%"; 
+        document.getElementById('player-hp').innerText = `🛡️ ${player.hp} / ${player.maxHp}`;
+    }
+
     checkBattle();
 }
 
@@ -1373,6 +1446,21 @@ function checkBattle() {
                 player.extraDEF += towerBonusDef;
                 
                 addLog(`✨ 吸收了本層的虛空精華，永久獲得 <b style="color:#e74c3c;">ATK +${towerBonusAtk}</b>、<b style="color:#3498db;">DEF +${towerBonusDef}</b>！`);
+                if (player.towerFloor === 10 && !player.relics.bloodthirst) {
+                    player.relics.bloodthirst = true;
+                    addLog(`👑 <b style="color:#f1c40f; font-size:1.3em;">塔之主人的恩賜！</b>`);
+                    addLog(`✨ 你獲得了傳說神器：<b style="color:#e74c3c; font-size:1.2em;">🩸 嗜血魔刃</b>！`);
+                } 
+                else if (player.towerFloor === 30 && !player.relics.hourglass) {
+                    player.relics.hourglass = true;
+                    addLog(`👑 <b style="color:#f1c40f; font-size:1.3em;">塔之主人的恩賜！</b>`);
+                    addLog(`✨ 你獲得了傳說神器：<b style="color:#f39c12; font-size:1.2em;">⏳ 永恆沙漏</b>！`);
+                } 
+                else if (player.towerFloor === 50 && !player.relics.greed) {
+                    player.relics.greed = true;
+                    addLog(`👑 <b style="color:#f1c40f; font-size:1.3em;">塔之主人的恩賜！</b>`);
+                    addLog(`✨ 你獲得了傳說神器：<b style="color:#2ecc71; font-size:1.2em;">🍀 貪婪之手</b>！`);
+                }
                 
                 player.towerFloor++; // 層數推進
             }
@@ -1399,7 +1487,11 @@ function checkBattle() {
                 addLog(`🎁 怪物掉落了裝備：<b style="color: ${color};">${newEquip.name} (${statLog})</b>`);
             }
         }
-        
+        // 👑 神器判定：永恆沙漏
+        if (player.relics && player.relics.hourglass) {
+            reduceCooldowns(); // 呼叫減 CD 函數，讓它額外再扣一回合！
+            addLog(`⏳ <b style="color:#f39c12;">【時間流動】</b> 敵人的靈魂驅動了沙漏，所有技能冷卻額外 -1！`);
+        }
         player.exp += currentMonster.exp;
         player.coin += currentMonster.coin;
         
@@ -1454,7 +1546,15 @@ function renderInventory() {
         if(item.rarity === 'Mythic') color = "#f39c12";   
 
         // 判斷文字顯示 ATK 還是 DEF
-        let statText = item.type === 'weapon' ? `ATK +${item.atkBonus}` : `DEF +${item.defBonus}`;
+        // (在 renderInventory 裡找到這段並替換)
+        let statText = "";
+        if (item.type === 'weapon') {
+            // 🌟 套用 formatBigNumber
+            statText = `ATK +${formatBigNumber(item.atkBonus)}`;
+        } else if (item.type === 'armor') {
+            // 🌟 套用 formatBigNumber
+            statText = `DEF +${formatBigNumber(item.defBonus)}`;
+        }
 
         // 🌟🌟🌟 新增按鈕邏輯：判斷這件裝備是否「正在穿著」 🌟🌟🌟
         let isEquipped = false;
@@ -1815,7 +1915,13 @@ function rollGacha(times) {
         return;
     }
 
-    player.coin -= totalCost;
+    // 👑 神器判定：貪婪之手
+    if (player.relics && player.relics.greed && Math.random() < 0.10) { // 10% 機率
+        addLog(`🍀 <b style="color:#2ecc71; font-size:1.1em;">【貪婪之手發動！】</b> 財神的幻影替你買單，本次花費的 ${totalCost.toLocaleString()} 金幣完全免費！`);
+        // 不扣錢！
+    } else {
+        player.coin -= totalCost; // 正常扣錢
+    }
     
     let results = [];
     let missCount = 0; 
@@ -2138,6 +2244,65 @@ function closeManual() {
     if (modal) {
         modal.style.display = 'none';
     }
+}
+// ==========================================
+// 💾 存檔匯出與匯入系統 (Base64 編碼)
+// ==========================================
+
+function exportSave() {
+    // 1. 將玩家資料物件 (Object) 轉成字串 (String)
+    let saveData = JSON.stringify(player);
+    
+    // 2. 進行 Base64 編碼，加上 encodeURIComponent 防止中文字元報錯
+    let encodedSave = btoa(encodeURIComponent(saveData)); 
+    
+    // 3. 嘗試自動複製到剪貼簿
+    navigator.clipboard.writeText(encodedSave).then(() => {
+        alert("✅ 存檔代碼已成功複製到剪貼簿！\n請將這串密碼貼到記事本或安全的地方妥善保存。");
+        addLog("💾 <b style='color:#27ae60;'>存檔已成功匯出並複製！</b>");
+    }).catch(err => {
+        // 如果瀏覽器阻擋自動複製，退回傳統彈出視窗讓玩家自己按 Ctrl+C
+        prompt("你的瀏覽器不支援自動複製，請手動複製以下存檔代碼：", encodedSave);
+    });
+}
+
+function importSave() {
+    // 1. 彈出輸入框讓玩家貼上代碼
+    let saveCode = prompt("📥 請貼上你的存檔代碼：");
+    
+    // 如果玩家按取消或沒輸入，直接中斷
+    if (!saveCode) return; 
+
+    // 🌟 關鍵防呆機制：try...catch，防止玩家貼錯代碼導致整個遊戲崩潰
+    try {
+        // 2. 解碼 Base64 並轉回中文字串
+        let decodedSave = decodeURIComponent(atob(saveCode));
+        
+        // 3. 將字串轉換回 JavaScript 物件
+        let parsedPlayer = JSON.parse(decodedSave);
+        
+        // 4. 覆蓋現在的進度，並強制執行存檔與畫面更新
+        player = parsedPlayer;
+        saveGame();
+        updateUI();
+        renderInventory(); // 確保裝備欄與屬性正確刷新
+        
+        addLog("✨ <b style='color:#e67e22; font-size:1.2em;'>時空跳躍成功！存檔已完美載入！</b>");
+        alert("✅ 存檔匯入成功！歡迎回來，造物主。");
+        
+    } catch (error) {
+        // 如果解碼失敗 (例如玩家少複製一個字，或貼了奇怪的東西)
+        addLog("❌ <b style='color:red;'>存檔匯入失敗！代碼可能損毀或格式錯誤。</b>");
+        alert("❌ 匯入失敗！請確認你複製的代碼是否完整，沒有漏掉任何字元。");
+        console.error("匯入錯誤解析:", error);
+    }
+}
+// 🌟 超大數值轉換器 (超過10位數自動轉指數)
+function formatBigNumber(num) {
+    if (num >= 1e9) { // 10位數 (1,000,000,000) 以上
+        return num.toExponential(2).replace('e+', ' E');
+    }
+    return num.toLocaleString(); // 10位數以下，維持加上千分位逗號 (例如 12,345)
 }
 // --- 遊戲啟動 ---
 loadGame(); 
