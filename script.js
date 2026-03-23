@@ -2125,6 +2125,20 @@ function autoBattleLogic() {
     // 🗡️ 優先級 E：招式全在冷卻中，平A普通攻擊
     attack();
 }
+// --- 📖 遊戲說明書開關邏輯 ---
+function openManual() {
+    const modal = document.getElementById('manual-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+function closeManual() {
+    const modal = document.getElementById('manual-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
 // --- 遊戲啟動 ---
 loadGame(); 
 updateUI();
