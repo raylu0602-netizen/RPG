@@ -1075,6 +1075,10 @@ function spawnBoss() {
 // 🌟🌟🌟 全新防禦減傷計算區塊 🌟🌟🌟
 // 🌟🌟🌟 普攻系統 (支援風行連擊 & 嗜血魔刃真傷版) 🌟🌟🌟
 function attack() {
+    if (currentMonster.hp === Infinity) {
+        addLog(`⚠️ 你的攻擊接觸到【單位根結界】，被轉換為虛數消散了！傷害：0`);
+        return;
+    }
     if (!currentMonster || player.hp <= 0) return;
     if (sounds.attack) { sounds.attack.currentTime = 0; sounds.attack.play().catch(e => {}); }
 
@@ -1143,6 +1147,10 @@ function attack() {
 }
 
 function useFireball() {
+    if (currentMonster && currentMonster.isPokerGame) {
+        addLog("🃏 現在是打牌時間，魔法在這裡無法生效！請專心看你的手牌。");
+        return;
+    }
     if (!currentMonster || player.skills.fireballCD > 0) return;
     if (sounds.fireball) { sounds.fireball.currentTime = 0; sounds.fireball.play().catch(e => {}); }
 
@@ -1186,6 +1194,10 @@ function useFireball() {
 }
 
 function useLightning() {
+    if (currentMonster && currentMonster.isPokerGame) {
+        addLog("🃏 現在是打牌時間，魔法在這裡無法生效！請專心看你的手牌。");
+        return;
+    }
     if (!currentMonster || player.skills.lightningCD > 0) return;
 
     let skillLv = player.skillLevels.lightning;
@@ -1218,6 +1230,10 @@ function useLightning() {
     checkBattle(); 
 }
 function useWindWalk() {
+    if (currentMonster && currentMonster.isPokerGame) {
+        addLog("🃏 現在是打牌時間，魔法在這裡無法生效！請專心看你的手牌。");
+        return;
+    }
     if (!currentMonster || player.skills.windWalkCD > 0 || player.windWalkActive) return;
 
     player.windWalkActive = true;
@@ -1232,6 +1248,10 @@ function useWindWalk() {
 }
 // --- ✨ 1轉專屬神技 (支援風行連擊版) ---
 function useHolyLight() {
+    if (currentMonster && currentMonster.isPokerGame) {
+        addLog("🃏 現在是打牌時間，魔法在這裡無法生效！請專心看你的手牌。");
+        return;
+    }
     if (!currentMonster || player.skills.holyLightCD > 0) return;
 
     let baseHolyDmg = Math.floor(player.maxHp * 0.1) + (player.atkRange[1]*10);
@@ -1269,6 +1289,10 @@ function useHolyLight() {
 }
 // --- 🌌 3轉專屬神技：虛空黑洞 ---
 function useBlackHole() {
+    if (currentMonster && currentMonster.isPokerGame) {
+        addLog("🃏 現在是打牌時間，魔法在這裡無法生效！請專心看你的手牌。");
+        return;
+    }
     if (!currentMonster || player.skills.blackHoleCD > 0) return;
 
     let skillLv = player.skillLevels.blackHole;
@@ -1388,6 +1412,10 @@ function monsterTurn() {
 // 🌟🌟🌟 減傷計算區塊結束 🌟🌟🌟
 
 function useHeal() {
+    if (currentMonster && currentMonster.isPokerGame) {
+        addLog("🃏 現在是打牌時間，魔法在這裡無法生效！請專心看你的手牌。");
+        return;
+    }
     if (!currentMonster || player.skills.healCD > 0) return;
 
     let skillLv = player.skillLevels.heal;
@@ -1492,6 +1520,7 @@ function checkBattle() {
             reduceCooldowns(); // 呼叫減 CD 函數，讓它額外再扣一回合！
             addLog(`⏳ <b style="color:#f39c12;">【時間流動】</b> 敵人的靈魂驅動了沙漏，所有技能冷卻額外 -1！`);
         }
+        
         player.exp += currentMonster.exp;
         player.coin += currentMonster.coin;
         
@@ -1774,6 +1803,12 @@ function changeArea() {
 }
 
 function revive() {
+    // 🌟 新增防護：淨化可能存在的 NaN 病毒，確保死亡懲罰計算不會崩潰
+    if (isNaN(player.maxHp) || player.maxHp <= 0) player.maxHp = 100;
+    if (isNaN(player.coin)) player.coin = 0;
+    if (isNaN(player.exp)) player.exp = 0;
+
+    // --- 原本的守護十字架與死亡懲罰邏輯 (完全保留) ---
     if (player.protectionAmulet > 0) {
         player.protectionAmulet--;
         addLog("✨ <b style='color:#f1c40f;'>【守護十字架】發出耀眼光芒碎裂了！你免除了死亡懲罰並滿血復活！</b>");
@@ -1805,22 +1840,39 @@ function revive() {
         }
     }
 
+    // --- 🌟 狀態重置與清場邏輯 ---
+    
+    // 1. 強制滿血
     player.hp = player.maxHp;       
+    
+    // 2. 終極清場：解除戰鬥與隱藏特殊面板 (包含 100 層的維度終端機)
     currentMonster = null;          
+    let mathPanel = document.getElementById('math-ascension-panel');
+    if (mathPanel) mathPanel.style.display = 'none';
+    
+    // 3. 重置所有技能冷卻與魔法狀態
+    if (!player.skills) player.skills = {}; // 防呆
     player.skills.fireballCD = 0;   
     player.skills.lightningCD = 0;
     player.skills.healCD = 0;
     player.skills.windWalkCD = 0;
     player.windWalkActive = false;
 
+    // 4. 重置探險按鈕 UI
     const exploreBtn = document.getElementById('explore-btn');
-    exploreBtn.innerText = `🧭 開始探險 `;
-    exploreBtn.style.backgroundColor = ""; 
-    exploreBtn.onclick = explore; 
+    if (exploreBtn) {
+        exploreBtn.innerText = `🧭 開始探險 `;
+        exploreBtn.style.backgroundColor = ""; 
+        exploreBtn.onclick = explore; 
+    }
 
+    // 5. 確保商店正常顯示
     const shopContainer = document.getElementById('shop-container');
-    if(shopContainer) shopContainer.style.display = 'block';
-
+    if (shopContainer) shopContainer.style.display = 'block';
+    
+    addLog("👼 系統重置完畢，你已從虛空中復活！");
+    
+    // 6. 存檔與刷新畫面
     updateUI(); 
     saveGame(); 
 }
@@ -2101,9 +2153,59 @@ function exploreTower() {
         return;
     }
 
+// (找到 exploreTower 裡的第 100 層事件並替換這一段)
+    if (player.towerFloor === 100) {
+        // 🎲 解放 n！隨機抽取 2 ~ 15 之間的整數
+        let randomN = Math.floor(Math.random() * 26) + 5; 
 
-    let floor = player.towerFloor;
-    
+        currentMonster = {
+            name: "👁️ 絕對真理 ‧ 歐拉之影",
+            hp: Infinity, 
+            maxHp: Infinity,
+            atk: 0, 
+            atkRange: [0, 0],
+            def: Infinity,
+            isTower: true,
+            shieldN: randomN,
+            coin: 0, 
+            exp: 0 
+        };
+        
+        addLog(`ERROR: <b style="color:red; background:black; font-family:monospace;">System.Exception: 維度崩塌。</b>`);
+        addLog(`🌌 <b style="color:#9b59b6; font-size: 1.5em; text-shadow: 0 0 10px #9b59b6;">「在純粹的真理面前，暴力毫無意義。」</b>`);
+        addLog(`👁️ 【歐拉之影】展開了由 <b style="color:#00ff00;">n=${randomN}</b> 次單位根構成的絕對結界。你的常規攻擊將無法造成任何傷害！`);
+        
+        let mathPanel = document.getElementById('math-ascension-panel');
+        if(mathPanel) mathPanel.style.display = 'block';
+        
+        updateUI();
+        return;
+    }
+    // 🃏 第 200 層：大老二生死局
+    if (player.towerFloor === 200) {
+        currentMonster = {
+            name: "🃏 維度賭徒 ‧ 迪勒",
+            hp: Infinity, // 牌局不打血量
+            maxHp: Infinity,
+            atk: 0, 
+            atkRange: [0, 0],
+            def: Infinity,
+            isTower: true,
+            isPokerGame: true // 🌟 標記這是一場牌局
+        };
+        
+        addLog(`🃏 <b style="color:#d4af37; font-size: 1.5em;">「打打殺殺太野蠻了，造物主，我們來玩兩把大老二吧？」</b>`);
+        addLog(`⚠️ 常規戰鬥介面已被封鎖！【維度賭徒】發起了卡牌對決。`);
+        
+        // 隱藏常規面板，開啟綠色賭桌
+        document.getElementById('poker-arena-panel').style.display = 'block';
+        document.getElementById('cheat-skills-section').style.display = 'block';
+        
+        // 這裡未來可以呼叫 initializePokerGame() 來發牌
+        initializePokerGame();
+        updateUI();
+        return;
+    }
     // 塔內怪物公式
     let mHp = Math.floor(500000 * Math.pow(1.5, floor)); 
     let mAtk = Math.floor(20000 * Math.pow(1.2, floor));
@@ -2303,6 +2405,91 @@ function formatBigNumber(num) {
         return num.toExponential(2).replace('e+', ' E');
     }
     return num.toLocaleString(); // 10位數以下，維持加上千分位逗號 (例如 12,345)
+}
+// --- 🌌 數學維度打擊：分圓共振 ---
+// --- 🌌 數學維度打擊：分圓共振 (全動態引擎演算版) ---
+function castCyclotomicStrike() {
+    if (!currentMonster || currentMonster.hp !== Infinity) return;
+
+    let n = currentMonster.shieldN;
+    
+    // 🌟 直接呼叫多項式除法引擎，動態算出正確答案！
+    let correctCoeffs = getCyclotomicCoeffs(n);
+
+    let input = prompt(`🌌 偵測到結界 n=${n} (多項式最高次為 ${correctCoeffs.length - 1})。\n請輸入 Φ_${n}(x) 的所有係數 (請用逗號分隔，例如 1,-1,1)：`);
+    if (!input) return;
+
+    let coefficients = input.split(',').map(Number);
+    let isCorrect = (JSON.stringify(coefficients) === JSON.stringify(correctCoeffs));
+
+    if (isCorrect) {
+        addLog(`[System] 係數核對成功：[${coefficients.join(', ')}]。`);
+        addLog(`🌌 <b style="color:#00ff00; font-size: 1.5em; font-family:monospace;">執行：Math.splice(宇宙, 歐拉之影)</b>`);
+        addLog(`💥 <b style="color:#f1c40f; font-size: 1.8em; text-shadow: 0 0 15px #f1c40f;">【維度共振大爆發】</b> 單位根結界崩解！造成了 <b style="color:red;">NaN</b> 點概念傷害！`);
+        
+        currentMonster.hp = 0;
+        let mathPanel = document.getElementById('math-ascension-panel');
+        if(mathPanel) mathPanel.style.display = 'none'; 
+        checkBattle(); 
+    // (在 castCyclotomicStrike 裡面找到這段並替換)
+    } else {
+        addLog(`❌ <b style="color:red; font-family:monospace;">[Error] 係數錯誤。你輸入了 [${coefficients.join(', ')}]。</b>`);
+        addLog(`⚠️ 結界反噬了你的靈魂！正確的真理應為 [${correctCoeffs.join(', ')}]。`);
+        
+        player.hp = 0; 
+        currentMonster = null; // 🌟 關鍵修復：把 Boss 清除，解除戰鬥狀態！
+        
+        // 🌟 關鍵修復：把真理面板隱藏起來
+        let mathPanel = document.getElementById('math-ascension-panel');
+        if(mathPanel) mathPanel.style.display = 'none'; 
+        
+        updateUI();
+    }
+}
+// ==========================================
+// 🌌 維度運算核心：動態分圓多項式生成器
+// ==========================================
+
+// 1. 陣列多項式除法 (A / B = Q)
+// 陣列格式：[常數項, 一次項, 二次項...] (由低次到高次)
+function polyDiv(A, B) {
+    let res = [...A];
+    let q = new Array(A.length - B.length + 1).fill(0);
+    
+    for (let i = res.length - 1; i >= B.length - 1; i--) {
+        let coef = res[i] / B[B.length - 1]; // 分圓多項式最高次係數必為 1
+        q[i - (B.length - 1)] = coef;
+        for (let j = 0; j < B.length; j++) {
+            res[i - j] -= coef * B[B.length - 1 - j];
+        }
+    }
+    return q;
+}
+
+// 2. 動態生成 Φ_n(x) 的係數
+function getCyclotomicCoeffs(n) {
+    let polys = {};
+    polys[1] = [-1, 1]; // Φ_1(x) = x - 1
+    
+    for (let k = 2; k <= n; k++) {
+        // 建立 x^k - 1 (最低次為 -1，最高次為 1，中間皆為 0)
+        let xk_1 = new Array(k + 1).fill(0);
+        xk_1[0] = -1;
+        xk_1[k] = 1;
+        
+        let temp = xk_1;
+        // 除以所有 d|k 且 d < k 的 Φ_d(x)
+        for (let d = 1; d < k; d++) {
+            if (k % d === 0) {
+                temp = polyDiv(temp, polys[d]);
+            }
+        }
+        // 避免浮點數誤差，取整數
+        polys[k] = temp.map(Math.round); 
+    }
+    
+    // 將結果反轉 (由高次到低次輸出，符合玩家輸入習慣)
+    return polys[n].slice().reverse();
 }
 // --- 遊戲啟動 ---
 loadGame(); 
