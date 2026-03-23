@@ -134,9 +134,19 @@ function initializePokerGame() {
 
 function startPokerPractice() {
     pokerGame.isPractice = true;
+    
+    // 1. 顯示大老二面板
     document.getElementById('poker-arena-panel').style.display = 'block';
-    document.getElementById('cheat-skills-section').style.display = 'none'; // 隱藏出千
+    
+    // 2. 隱藏出千技能區
+    document.getElementById('cheat-skills-section').style.display = 'none';
+    
+    // 🌟 3. 隱藏主畫面的探險按鈕
+    const exploreBtn = document.getElementById('explore-btn');
+    if (exploreBtn) exploreBtn.style.display = 'none';
+    
     initializePokerGame();
+    addLog("🃏 <b style='color:#3498db;'>進入【牌技修煉】模式。</b>");
 }
 
 // --- 4. 渲染與交互 ---
@@ -169,17 +179,50 @@ function renderPokerTable() {
     }
 
     // 按鈕區
-    let btnHTML = '<div style="margin-top: 20px;">';
-    if (pokerGame.selectedCards.length > 0) {
-        btnHTML += `<button onclick="playSelectedCards()" style="background:#27ae60; color:white; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer;">🃏 出牌 (${pokerGame.selectedCards.length}張)</button>`;
-        btnHTML += `<button onclick="pokerGame.selectedCards=[]; renderPokerTable();" style="background:#7f8c8d; color:white; padding:10px 20px; border-radius:5px; margin-left:10px; cursor:pointer;">取消</button>`;
-    }
-    if (pokerGame.isPractice) {
-        btnHTML += `<button onclick="exitPokerGame()" style="background:#c0392b; color:white; padding:10px 20px; border-radius:5px; margin-left:10px; cursor:pointer;">🚪 結束練習</button>`;
-    }
-    btnHTML += '</div>';
-    handDiv.innerHTML += btnHTML;
 
+    // 生成按鈕容器
+    let actionButtonsHTML = `<div style="margin-top: 20px;">`;
+
+    // 1. 出牌按鈕 (只有選牌時才顯示，或者你可以設定一直顯示但無效)
+    if (pokerGame.selectedCards.length > 0) {
+        actionButtonsHTML += `
+            <button onclick="playSelectedCards()" style="background-color: #27ae60; color: white; border: none; padding: 10px 20px; font-size: 1.1em; border-radius: 5px; cursor: pointer; font-weight: bold; margin-right: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                🃏 出牌 (${pokerGame.selectedCards.length}張)
+            </button>
+        `;
+    }
+
+    // 2. PASS 按鈕 (只要桌上有牌，就可以 PASS)
+    if (pokerGame.tableCards) {
+        actionButtonsHTML += `
+            <button onclick="passTurn()" style="background-color: #e67e22; color: white; border: none; padding: 10px 20px; font-size: 1.1em; border-radius: 5px; cursor: pointer; font-weight: bold; margin-right: 10px;">
+                ⏭️ PASS (跳過)
+            </button>
+        `;
+    }
+
+    // 3. 取消選取按鈕
+    if (pokerGame.selectedCards.length > 0) {
+        actionButtonsHTML += `
+            <button onclick="pokerGame.selectedCards = []; renderPokerTable();" style="background-color: #7f8c8d; color: white; border: none; padding: 10px 20px; font-size: 1.1em; border-radius: 5px; cursor: pointer; font-weight: bold; margin-right: 10px;">
+                取消選取
+            </button>
+        `;
+    }
+
+    // 4. 練習模式的結束按鈕
+    if (pokerGame.isPractice) {
+        actionButtonsHTML += `
+            <button onclick="exitPokerGame()" style="background-color: #c0392b; color: white; border: none; padding: 10px 20px; font-size: 1.1em; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                🚪 結束練習
+            </button>
+        `;
+    }
+
+    actionButtonsHTML += `</div>`;
+    handDiv.innerHTML += actionButtonsHTML;
+
+    // 更新 Boss 張數顯示
     document.getElementById('boss-card-count').innerText = pokerGame.bossHandCount;
 }
 
@@ -330,6 +373,7 @@ function cheatTransformCard() {
     pokerGame.selectedCards = [];
     pokerGame.playerHand.sort((a, b) => a.power - b.power);
     addLog("⚡ 現實扭曲：手牌變更為 ♠2！");
+    saveGame();
     renderPokerTable(); updateUI();
 }
 
@@ -349,9 +393,9 @@ function checkPokerWin() {
             addLog("🎊 <b style='color:#f1c40f;'>【次元勝利】</b>獲得 10兆金幣與 5億經驗！");
             player.coin += 10000000000000; player.exp += 500000000;
             player.towerFloor++;
+            saveGame();
         } else { addLog("🎊 練習勝利！"); }
         setTimeout(exitPokerGame, 1500); 
-        exitPokerGame();
         return true;
         
     }
@@ -362,9 +406,9 @@ function checkPokerWin() {
                 player.hp = 0;
                 if (typeof revive === 'function') revive();
                 exitPokerGame(); // 輸了也要關掉牌桌
+                saveGame();
             }, 1000);
         } else { addLog("💀 練習失敗！"); setTimeout(exitPokerGame, 1500); }
-        exitPokerGame();
         return true;
     }
     return false;
@@ -395,10 +439,27 @@ function exitPokerGame() {
     pokerGame.selectedCards = [];
     pokerGame.isPractice = false;
 
-    // 5. 刷新主介面 (這一步會讓 Boss 血條和圖片消失)
-    if (typeof updateUI === 'function') {
-        updateUI();
+    if (typeof updateUI === 'function') updateUI();
+    addLog("✨ <b style='color:#3498db;'>牌局結束，回到冒險世界。</b>");
+}
+// --- 🃏 玩家按下「PASS」按鈕 ---
+function passTurn() {
+    // 🌟 防呆：如果桌上沒牌（你是發球方），不能 PASS
+    if (!pokerGame.tableCards) {
+        addLog("⚠️ <b style='color:#f39c12;'>現在是你的發球回合，必須出一張牌，不能 PASS！</b>");
+        return;
     }
 
-    addLog("✨ <b style='color:#3498db;'>牌局結束，回到冒險世界。</b>");
+    addLog("🃏 你選擇了 <b style='color:#7f8c8d;'>PASS</b>。");
+
+    // 🌟 核心邏輯：
+    // 1. 玩家 PASS 代表這一輪結束，桌面清空，讓 Boss 拿回「發球權」
+    pokerGame.tableCards = null; 
+    
+    // 2. 清空選取的牌，並重新渲染
+    pokerGame.selectedCards = [];
+    renderPokerTable();
+
+    // 3. 換 Boss 出牌（因為你 PASS 了，所以下一手他可以隨便出）
+    setTimeout(bossPlay, 500);
 }

@@ -2183,6 +2183,7 @@ function exploreTower() {
     }
     // 🃏 第 200 層：大老二生死局
     if (player.towerFloor === 200) {
+        pokerGame.isPractice = false;
         currentMonster = {
             name: "🃏 維度賭徒 ‧ 迪勒",
             hp: Infinity, // 牌局不打血量
@@ -2200,7 +2201,8 @@ function exploreTower() {
         // 隱藏常規面板，開啟綠色賭桌
         document.getElementById('poker-arena-panel').style.display = 'block';
         document.getElementById('cheat-skills-section').style.display = 'block';
-        
+        const exploreBtn = document.getElementById('explore-btn');
+        if (exploreBtn) exploreBtn.style.display = 'none';
         // 這裡未來可以呼叫 initializePokerGame() 來發牌
         initializePokerGame();
         updateUI();
