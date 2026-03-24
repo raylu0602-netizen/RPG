@@ -1110,14 +1110,21 @@ function attack() {
     let monsterDef = currentMonster.def || 0;
     // 如果有嗜血魔刃，減傷倍率直接變成 1 (無視防禦)！否則照常計算。
     let dmgMultiplier = hasBloodthirst ? 1 : (10000 / (10000 + monsterDef));
-    
+    // 🧊 冰霜巨龍：絕對冰盾判定
+    let isFrostShieldActive = false;
+    if (currentMonster.name === "絕對零度 ‧ 冰霜巨龍") {
+        // 如果沒有燃燒回合，啟動無敵護盾
+        if (!currentMonster.burnDuration || currentMonster.burnDuration <= 0) {
+            isFrostShieldActive = true;
+        }
+    }
     let totalFinalDmg = 0;
     let totalBlocked = 0;
-
+    // 在計算出玩家的攻擊傷害 (damage) 之後，扣除怪物血量之前：
     // 執行連擊迴圈
     for(let i=0; i<hits; i++) {
         let currentRaw = i === 1 ? Math.floor(rawDmg * windMultiplier) : rawDmg;
-        let currentFinal = Math.max(1, Math.floor(currentRaw * dmgMultiplier));
+        let currentFinal = isFrostShieldActive ? 0 : Math.max(1, Math.floor(currentRaw * dmgMultiplier));
         currentMonster.hp -= currentFinal;
         totalFinalDmg += currentFinal;
         totalBlocked += (currentRaw - currentFinal);
@@ -1127,7 +1134,9 @@ function attack() {
     if (typeof recordDamage === "function") recordDamage(totalFinalDmg);
 
     // --- ⚔️ 戰鬥廣播與吸血結算 ---
-    if (hasBloodthirst) {
+    if (isFrostShieldActive){
+        addLog(`🛡️ <b style="color:#3498db;">【絕對冰盾】</b> 巨龍的護盾擋下了你的攻擊！必須先用火焰融化牠！傷害：0`);
+    }else if (hasBloodthirst) {
         // 魔刃專屬：真傷 + 吸血廣播
         let lifesteal = Math.floor(totalFinalDmg * 0.5);
         player.hp += lifesteal;
@@ -1223,21 +1232,67 @@ function useLightning() {
         player.windWalkActive = false;
     }
 
+    // 🧊 冰霜巨龍：絕對冰盾判定
+    let isFrostShieldActive = false;
+    if (currentMonster.name === "絕對零度 ‧ 冰霜巨龍") {
+        if (!currentMonster.burnDuration || currentMonster.burnDuration <= 0) {
+            isFrostShieldActive = true;
+        }
+    }
+
+    // 🪞 虛空鏡魔：真實傷害反射判定
+    let isMirrorReflect = (currentMonster.name === "虛空鏡魔 ‧ 迪斯瑪");
+
     let totalFinalDmg = 0;
+    
     for(let i=0; i<hits; i++) {
-        let currentFinal = i === 1 ? Math.floor(trueDmg * windMultiplier) : trueDmg;
-        currentMonster.hp -= currentFinal;
+        let currentRaw = i === 1 ? Math.floor(trueDmg * windMultiplier) : trueDmg;
+        
+        // 🌟 傷害結算：遇到冰盾強制歸 0
+        let currentFinal = isFrostShieldActive ? 0 : currentRaw;
         totalFinalDmg += currentFinal;
+        
+        // 🌟 傷害對象判定：反射還是攻擊？
+        if (!isFrostShieldActive) {
+            if (isMirrorReflect) {
+                // 鏡魔機制：真傷反噬玩家自己！
+                player.hp -= currentFinal; 
+            } else {
+                // 正常情況：劈在怪物頭上
+                currentMonster.hp -= currentFinal;
+            }
+        }
     }
 
     player.skills.lightningCD = 5; 
 
-    if (hits === 2) {
-        addLog(`🌪️ <b style="color:#1abc9c;">【風行神雷】</b> ⚡ 天雷降下兩次制裁！<span style="background-color: #f1c40f; color: black; padding: 0 4px; border-radius: 3px; font-weight: bold;">無視防禦</span> 劈出 <b style="color:#e74c3c; font-size:1.2em;">${totalFinalDmg}</b> 點真實總傷害！`);
+    // --- ⚔️ 戰鬥廣播結算 ---
+    if (isFrostShieldActive) {
+        addLog(`🛡️ <b style="color:#3498db;">【絕對冰盾】</b> 巨龍的護盾連天雷都能吸收！必須先用火焰融化牠！傷害：0`);
+    } else if (isMirrorReflect) {
+        if (hits === 2) {
+            addLog(`🪞 <b style="color:#9b59b6;">【真實反射】</b> 鏡魔將 <b style="color:#1abc9c;">風行神雷</b> 雙倍反彈！你受到 <b style="color:#e74c3c; font-size:1.2em;">${totalFinalDmg}</b> 點真實反噬傷害！`);
+        } else {
+            addLog(`🪞 <b style="color:#9b59b6;">【真實反射】</b> 鏡魔將 <b style="color:#f1c40f;">閃電斬</b> 完美反彈！你受到 <b style="color:#e74c3c;">${totalFinalDmg}</b> 點真實反噬傷害！`);
+        }
+        
+        // 檢查玩家是不是被自己劈死了
+        if (player.hp <= 0) {
+            addLog("💀 <b style='color:red;'>天譴降臨...你被自己的強大力量毀滅了。</b>");
+        }
     } else {
-        addLog(`⚡ <b style="color:#9b59b6;">閃電斬！</b> <span style="background-color: #f1c40f; color: black; padding: 0 4px; border-radius: 3px; font-weight: bold;">無視防禦</span> 對敵人造成了 <b style="color:#e74c3c;">${totalFinalDmg}</b> 點真實傷害！`);
+        // 正常發動的廣播
+        if (hits === 2) {
+            addLog(`🌪️ <b style="color:#1abc9c;">【風行神雷】</b> ⚡ 天雷降下兩次制裁！<span style="background-color: #f1c40f; color: black; padding: 0 4px; border-radius: 3px; font-weight: bold;">無視防禦</span> 劈出 <b style="color:#e74c3c; font-size:1.2em;">${totalFinalDmg}</b> 點真實總傷害！`);
+        } else {
+            addLog(`⚡ <b style="color:#9b59b6;">閃電斬！</b> <span style="background-color: #f1c40f; color: black; padding: 0 4px; border-radius: 3px; font-weight: bold;">無視防禦</span> 對敵人造成了 <b style="color:#e74c3c;">${totalFinalDmg}</b> 點真實傷害！`);
+        }
+        recordDamage(totalFinalDmg);
     }
-    recordDamage(totalFinalDmg);
+    
+    // 🌟 更新 UI (萬一玩家被反射扣血了需要刷新血條)
+    if (typeof updateUI === 'function') updateUI();
+    
     checkBattle(); 
 }
 function useWindWalk() {
@@ -1273,31 +1328,67 @@ function useHolyLight() {
     let windMultiplier = 1;
     if (player.windWalkActive) {
         hits = 2;
-        // 強化倍率：第二下吃風行技能等級加成
         windMultiplier = 1 + (player.skillLevels.windWalk * 0.5); 
-        player.windWalkActive = false; // 消耗狀態
+        player.windWalkActive = false; 
     }
+
+    // 🧊 冰霜巨龍：絕對冰盾判定
+    let isFrostShieldActive = false;
+    if (currentMonster.name === "絕對零度 ‧ 冰霜巨龍") {
+        if (!currentMonster.burnDuration || currentMonster.burnDuration <= 0) {
+            isFrostShieldActive = true;
+        }
+    }
+
+    // 🪞 虛空鏡魔：真實傷害反射判定
+    let isMirrorReflect = (currentMonster.name === "虛空鏡魔 ‧ 迪斯瑪");
 
     let totalFinalDmg = 0;
 
-    // 執行連擊迴圈 (聖光是真實傷害，無視防禦)
+    // 執行連擊迴圈
     for(let i=0; i<hits; i++) {
-        let currentFinal = i === 1 ? Math.floor(rawHolyDmg * windMultiplier) : rawHolyDmg;
-        currentMonster.hp -= currentFinal;
+        let currentRaw = i === 1 ? Math.floor(rawHolyDmg * windMultiplier) : rawHolyDmg;
+        
+        // 🌟 傷害結算：遇到冰盾強制歸 0
+        let currentFinal = isFrostShieldActive ? 0 : currentRaw;
         totalFinalDmg += currentFinal;
+
+        // 🌟 傷害對象判定：反射還是攻擊？
+        if (!isFrostShieldActive) {
+            if (isMirrorReflect) {
+                player.hp -= currentFinal; // 鏡魔反彈真傷給玩家
+            } else {
+                currentMonster.hp -= currentFinal; // 正常攻擊
+            }
+        }
     }
 
     player.skills.holyLightCD = 7; 
 
-    // 戰鬥廣播
-    if (hits === 2) {
-        addLog(`🌪️ <b style="color:#1abc9c; font-size:1.2em;">【風行．超新星】</b> ✨ 兩道聖光接連貫穿天際！造成了 <b style="color:#e74c3c; font-size:1.5em;">${totalFinalDmg}</b> 點滅世級真實總傷害！`);
+    // --- ⚔️ 戰鬥廣播結算 ---
+    if (isFrostShieldActive) {
+        addLog(`🛡️ <b style="color:#3498db;">【絕對冰盾】</b> 巨龍的護盾連星辰之力都能阻擋！必須先用火焰融化牠！傷害：0`);
+    } else if (isMirrorReflect) {
+        if (hits === 2) {
+            addLog(`🪞 <b style="color:#9b59b6;">【真實反射】</b> 鏡魔將 <b style="color:#1abc9c;">風行．超新星</b> 徹底反彈！你受到 <b style="color:#e74c3c; font-size:1.5em;">${totalFinalDmg}</b> 點滅世級反噬傷害！`);
+        } else {
+            addLog(`🪞 <b style="color:#9b59b6;">【真實反射】</b> 鏡魔將 <b style="color:#f1c40f;">神罰．聖光</b> 完美折射！星辰之力反向貫穿了你，造成 <b style="color:#e74c3c; font-size:1.3em;">${totalFinalDmg}</b> 點反噬傷害！`);
+        }
+        if (player.hp <= 0) addLog("💀 <b style='color:red;'>神罰降臨...你被自己的力量制裁了。</b>");
     } else {
-        addLog(`✨ <b style="color:#f1c40f; font-size:1.3em;">【神罰．聖光】</b> 降臨！星辰之力貫穿了 ${currentMonster.name}，造成 <b style="color:#e74c3c; font-size:1.3em;">${totalFinalDmg}</b> 點毀滅性真實傷害！`);
+        // 正常發動的廣播
+        if (hits === 2) {
+            addLog(`🌪️ <b style="color:#1abc9c; font-size:1.2em;">【風行．超新星】</b> ✨ 兩道聖光接連貫穿天際！造成了 <b style="color:#e74c3c; font-size:1.5em;">${totalFinalDmg}</b> 點滅世級真實總傷害！`);
+        } else {
+            addLog(`✨ <b style="color:#f1c40f; font-size:1.3em;">【神罰．聖光】</b> 降臨！星辰之力貫穿了 ${currentMonster.name}，造成 <b style="color:#e74c3c; font-size:1.3em;">${totalFinalDmg}</b> 點毀滅性真實傷害！`);
+        }
+        recordDamage(totalFinalDmg);
     }
-    recordDamage(totalFinalDmg);
+    
+    if (typeof updateUI === 'function') updateUI();
     checkBattle();
 }
+// --- 🌌 3轉專屬神技：虛空黑洞 ---
 // --- 🌌 3轉專屬神技：虛空黑洞 ---
 function useBlackHole() {
     if (currentMonster && currentMonster.isPokerGame) {
@@ -1307,10 +1398,7 @@ function useBlackHole() {
     if (!currentMonster || player.skills.blackHoleCD > 0) return;
 
     let skillLv = player.skillLevels.blackHole;
-    // 基礎傷害極高：最大血量 20% + 攻擊力上限 * 20
     let baseBHDmg = Math.floor(player.maxHp * 0.2) + (player.atkRange[1] * 20);
-    
-    // 🌟 三次方爆發公式：基礎傷害 × (轉生次數的 3 次方) × (100 + 技能等級 × 50)
     let rawBHDmg = baseBHDmg * Math.pow(player.rebirthCount, 3) * (100 + skillLv * 50); 
     
     // 🌟 風行判定邏輯
@@ -1322,35 +1410,69 @@ function useBlackHole() {
         player.windWalkActive = false; 
     }
 
+    // 🧊 冰霜巨龍判定
+    let isFrostShieldActive = false;
+    if (currentMonster.name === "絕對零度 ‧ 冰霜巨龍" && (!currentMonster.burnDuration || currentMonster.burnDuration <= 0)) {
+        isFrostShieldActive = true;
+    }
+
+    // 🪞 虛空鏡魔判定
+    let isMirrorReflect = (currentMonster.name === "虛空鏡魔 ‧ 迪斯瑪");
+
     let totalFinalDmg = 0;
 
     for(let i=0; i<hits; i++) {
-        let currentFinal = i === 1 ? Math.floor(rawBHDmg * windMultiplier) : rawBHDmg;
-        currentMonster.hp -= currentFinal;
+        let currentRaw = i === 1 ? Math.floor(rawBHDmg * windMultiplier) : rawBHDmg;
+        let currentFinal = isFrostShieldActive ? 0 : currentRaw;
         totalFinalDmg += currentFinal;
+
+        if (!isFrostShieldActive) {
+            if (isMirrorReflect) {
+                player.hp -= currentFinal; 
+            } else {
+                currentMonster.hp -= currentFinal;
+            }
+        }
     }
 
-    // 🌟 黑洞特有：吞噬吸血 (將 30% 真實傷害轉化為自身護盾)
-    let lifesteal = Math.floor(totalFinalDmg * 0.3);
-    player.hp += lifesteal;
+    let lifesteal = 0;
+    // 🌟 關鍵機制：只有在「沒被冰盾擋下」且「沒被鏡魔反彈」的情況下，才能發動吸血！
+    if (!isFrostShieldActive && !isMirrorReflect) {
+        lifesteal = Math.floor(totalFinalDmg * 0.3);
+        player.hp += lifesteal;
+    }
 
-    player.skills.blackHoleCD = 10; // 滅世級冷卻：10回合
+    player.skills.blackHoleCD = 10; 
 
-    // 戰鬥廣播
-    if (hits === 2) {
-        addLog(`🌪️ <b style="color:#1abc9c; font-size:1.2em;">【風行．維度崩塌】</b> 🌌 兩顆黑洞互相吸引引發宇宙爆炸！造成 <b style="color:#9b59b6; font-size:1.5em;">${totalFinalDmg}</b> 點毀滅傷害，並吞噬了 <b style="color:#2ecc71;">${lifesteal}</b> 點生命護盾！`);
+    // --- ⚔️ 戰鬥廣播結算 ---
+    if (isFrostShieldActive) {
+        addLog(`🛡️ <b style="color:#3498db;">【絕對冰盾】</b> 黑洞的重力被凍結了！護盾吸收了所有傷害！傷害：0`);
+    } else if (isMirrorReflect) {
+        if (hits === 2) {
+            addLog(`🪞 <b style="color:#9b59b6;">【真實反射】</b> 鏡魔將 <b style="color:#1abc9c;">風行．維度崩塌</b> 反向開啟！兩顆黑洞反過來吞噬了你，造成 <b style="color:#e74c3c; font-size:1.5em;">${totalFinalDmg}</b> 點反噬傷害！(且無法獲得護盾)`);
+        } else {
+            addLog(`🪞 <b style="color:#9b59b6;">【真實反射】</b> 鏡魔逆轉了重力！<b style="color:#9b59b6;">虛空黑洞</b> 反噬了你，造成 <b style="color:#e74c3c; font-size:1.3em;">${totalFinalDmg}</b> 點傷害！(且無法獲得護盾)`);
+        }
+        if (player.hp <= 0) addLog("💀 <b style='color:red;'>維度崩塌...你連同靈魂都被吸入了無盡的深淵。</b>");
     } else {
-        addLog(`🌌 <b style="color:#9b59b6; font-size:1.3em;">【虛空黑洞】</b> 撕裂了空間！對 ${currentMonster.name} 造成 <b style="color:#e74c3c; font-size:1.3em;">${totalFinalDmg}</b> 點真實傷害，並吸收 <b style="color:#2ecc71;">${lifesteal}</b> 點護盾！`);
+        // 正常發動的廣播
+        if (hits === 2) {
+            addLog(`🌪️ <b style="color:#1abc9c; font-size:1.2em;">【風行．維度崩塌】</b> 🌌 兩顆黑洞互相吸引引發宇宙爆炸！造成 <b style="color:#9b59b6; font-size:1.5em;">${totalFinalDmg}</b> 點毀滅傷害，並吞噬了 <b style="color:#2ecc71;">${lifesteal}</b> 點生命護盾！`);
+        } else {
+            addLog(`🌌 <b style="color:#9b59b6; font-size:1.3em;">【虛空黑洞】</b> 撕裂了空間！對 ${currentMonster.name} 造成 <b style="color:#e74c3c; font-size:1.3em;">${totalFinalDmg}</b> 點真實傷害，並吸收 <b style="color:#2ecc71;">${lifesteal}</b> 點護盾！`);
+        }
+        recordDamage(totalFinalDmg);
     }
     
-    // 更新護盾 UI
+    // 更新護盾 UI (只在有加血或被扣血時重新繪製)
     const hpFill = document.getElementById('player-hp-fill');
     if (player.hp > player.maxHp && hpFill) {
         hpFill.style.backgroundColor = "#f1c40f"; 
         hpFill.style.width = "100%"; 
         document.getElementById('player-hp').innerText = `🛡️ ${player.hp} / ${player.maxHp}`;
     }
-    recordDamage(totalFinalDmg);
+    
+    if (typeof updateUI === 'function') updateUI();
     checkBattle();
 }
 function monsterTurn() {
@@ -1368,7 +1490,21 @@ function monsterTurn() {
         }
     }
     // 🌟🌟🌟 狀態異常結算結束 🌟🌟🌟
-
+    // 在怪物準備對玩家造成傷害的地方：
+    if (currentMonster.name === "猩紅死神 ‧ 塔納托斯") {
+        currentMonster.turnCount = (currentMonster.turnCount || 0) + 1;
+        
+        // 每 4 回合發動一次死神鐮刀
+        if (currentMonster.turnCount % 4 === 0) {
+            // 🌟 無視防禦，直接造成最大生命 150% 的真實傷害
+            let deathDamage = Math.floor(player.maxHp * 100); 
+            player.hp -= deathDamage;
+            addLog(`🩸 死神揮下了鐮刀！對你造成了 ${deathDamage} 點真實傷害！`);
+        } else {
+            addLog("⏳ 死神正在凝視著你... 鐮刀即將落下。");
+            return; // 平常回合不攻擊給玩家壓力
+        }
+    }
     // 原本的怪物反擊邏輯
     let rawDmg = Math.floor(Math.random() * (currentMonster.atk[1] - currentMonster.atk[0])) + currentMonster.atk[0];
     
@@ -1406,18 +1542,6 @@ function monsterTurn() {
         updateUI();
         saveGame();
         return; // 中斷後續的戰鬥計算
-    }
-    if (player.hp <= 0) {
-        player.hp = 0;
-        addLog("<b style='color:red; font-size:1.2em;'>💀 你倒下了... 請選擇復活。</b>");
-        
-        document.getElementById('battle-actions').style.display = 'none';
-        
-        const exploreBtn = document.getElementById('explore-btn');
-        exploreBtn.style.display = 'inline-block';
-        exploreBtn.innerText = "☠️ 接受命運並復活";
-        exploreBtn.style.backgroundColor = "#e74c3c"; 
-        exploreBtn.onclick = revive; 
     }
 }
 // 🌟🌟🌟 減傷計算區塊結束 🌟🌟🌟
@@ -2164,7 +2288,6 @@ function exploreTower() {
         return;
     }
 
-// (找到 exploreTower 裡的第 100 層事件並替換這一段)
     if (player.towerFloor % 100 === 0) {
         let floor = player.towerFloor;
         let randomN = Math.floor(Math.random() * floor/4) + floor/4; 
@@ -2216,9 +2339,58 @@ function exploreTower() {
         initializePokerGame();
         updateUI();
         return;
+    }else if (player.towerFloor % 10 === 0) {
+    
+        // 根據樓層給予動態數值倍率 (越爬越高，Boss 血量攻擊力越扯)
+        let scale = Math.pow(1.5, player.towerFloor ); 
+        let baseHp = 100000 * scale;
+        let baseAtk = 5000 * scale;
+
+        // 建立 4 隻機制 Boss 的清單
+        const bossPool = [
+            {
+                name: "絕對屏障 ‧ 鋼鐵巨神兵",
+                hp: baseHp, maxHp: baseHp,
+                atkRange: [baseAtk, baseAtk ], 
+                def: Infinity, // 物理免疫
+                isTower: true,
+            },
+            {
+                name: "絕對零度 ‧ 冰霜巨龍",
+                hp: baseHp * 0.8, maxHp: baseHp * 0.8,
+                atkRange: [baseAtk * 1.5, baseAtk * 1.5],
+                def: 50000, 
+                isTower: true,
+                burnDuration: 0
+            },
+            {
+                name: "猩紅死神 ‧ 塔納托斯",
+                hp: baseHp * 1.2, 
+                maxHp: baseHp * 1.2,
+                atkRange: [0, 0], // 攻擊力由特殊機制決定
+                def: 30000,
+                isTower: true,
+                turnCount: 0 // 用來計算回合數
+            },
+            {
+                name: "虛空鏡魔 ‧ 迪斯瑪",
+                hp: baseHp * 0.5, 
+                maxHp: baseHp * 0.5, // 血量極少
+                atkRange: [baseAtk , baseAtk ],
+                def: 0, // 防禦極低
+                isTower: true,
+            }
+        ];
+
+        // 🎲 隨機抽取一隻 Boss 成為目前的怪物
+        let randomIndex = Math.floor(Math.random() * bossPool.length);
+        currentMonster = bossPool[randomIndex];
+        
+        addLog(`⚠️ <b style='color:red;'>警告！遭遇第 ${player.towerFloor} 層守衛：${currentMonster.name}！</b>`);
+
     }
     // 塔內怪物公式
-    let mHp = Math.floor(500000 * Math.pow(1.5, floor)); 
+    let mHp = Math.floor(50000 * Math.pow(1.5, floor)); 
     let mAtk = Math.floor(20000 * Math.pow(1.2, floor));
     let def = Math.floor(1000 * Math.pow(1.15, floor));
     let mExp = 0;
@@ -2530,9 +2702,6 @@ function triggerEulerEnding() {
         "『你解開了圓的詛咒。』祂的聲音在崩落的維度中迴盪，",
         "『完美的分割，將混沌的無限，化為了有理的秩序。』",
         `整整 ${player.rebirthCount} 次的轉生，你在這座無盡的輪迴之塔中，畫出了最完美的單位圓。`,
-        " ",
-        "<span style='font-size: 2.8em; color: #f1c40f; text-shadow: 0 0 25px #f1c40f, 0 0 10px #e67e22;'>e<sup>iπ</sup> + 1 = 0</span>",
-        " ",
         "所有的指數級膨脹、虛數的夢魘、以及如圓周率般無止境的迴圈...",
         "都在 $\\Phi_n(x)$ 的引導下，收斂於最純粹的 $0$。",
         " ",
