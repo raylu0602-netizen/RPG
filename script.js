@@ -27,7 +27,8 @@ let player = {
     maxTowerFloor: 1,
     stats: { kills: 0, maxDamage: 0, totalGold: 0 },
     enhanceStones: 0,
-    relics: { bloodthirst: false, hourglass: false, greed: false }
+    relics: { bloodthirst: false, hourglass: false, greed: false },
+    hasTranscended: false
 };
 
 // --- 🗺️ 世界地圖與怪物設定 ---
@@ -533,6 +534,7 @@ function updateUI() {
         player.relics.greed = true;
         addLog(`🎁 <b style="color:#f1c40f; font-size:1.2em;">【系統補償信件】</b> 檢測到您已通關第 50 層，系統自動補發神器：<b style="color:#2ecc71;">🍀 貪婪之手</b>！`);
     }
+    if (player.hasTranscended === undefined) player.hasTranscended = false;
     
     // 順便把轉生次數顯示在畫面上 (如果你有在 HTML 寫玩家名字，可以接在名字後面)
     document.getElementById('player-level').innerText = `Lv.${player.level} (轉生: ${player.rebirthCount})`;
@@ -911,6 +913,15 @@ function updateUI() {
         }
         
         relicListEl.innerHTML = `<ul style='margin:0; padding-left: 20px;'>${html}</ul>`;
+    }
+    // 🌟 如果玩家已經超脫，永遠隱藏爬塔與轉生機制
+    if (player.hasTranscended) {
+        const rebirthSection = document.getElementById('rebirth-container'); 
+        if (rebirthSection) rebirthSection.style.display = 'none';
+
+        // 你甚至可以把右上角的樓層顯示改成「∞」或「無」
+        const towerSection = document.getElementById('tower-container'); 
+        if (towerSection) towerSection.style.display = 'none';
     }
     renderInventory();
     renderAreaSelector();
@@ -2154,9 +2165,9 @@ function exploreTower() {
     }
 
 // (找到 exploreTower 裡的第 100 層事件並替換這一段)
-    if (player.towerFloor === 100) {
-        // 🎲 解放 n！隨機抽取 2 ~ 15 之間的整數
-        let randomN = Math.floor(Math.random() * 26) + 5; 
+    if (player.towerFloor % 100 === 0) {
+        let floor = player.towerFloor;
+        let randomN = Math.floor(Math.random() * floor/4) + floor/4; 
 
         currentMonster = {
             name: "👁️ 絕對真理 ‧ 歐拉之影",
@@ -2180,9 +2191,7 @@ function exploreTower() {
         
         updateUI();
         return;
-    }
-    // 🃏 第 200 層：大老二生死局
-    if (player.towerFloor === 200) {
+    }else if (player.towerFloor % 50 === 0) {
         pokerGame.isPractice = false;
         currentMonster = {
             name: "🃏 維度賭徒 ‧ 迪勒",
@@ -2195,7 +2204,7 @@ function exploreTower() {
             isPokerGame: true // 🌟 標記這是一場牌局
         };
         
-        addLog(`🃏 <b style="color:#d4af37; font-size: 1.5em;">「打打殺殺太野蠻了，造物主，我們來玩兩把大老二吧？」</b>`);
+        addLog(`🃏 <b style="color:#d4af37; font-size: 1.5em;">「打打殺殺太野蠻了，造物主，我們來玩把大老二吧？」</b>`);
         addLog(`⚠️ 常規戰鬥介面已被封鎖！【維度賭徒】發起了卡牌對決。`);
         
         // 隱藏常規面板，開啟綠色賭桌
@@ -2432,6 +2441,10 @@ function castCyclotomicStrike() {
         currentMonster.hp = 0;
         let mathPanel = document.getElementById('math-ascension-panel');
         if(mathPanel) mathPanel.style.display = 'none'; 
+        if (player.rebirthCount >= 10 && player.towerFloor >= 200) {
+            triggerEulerEnding(); // 呼叫全黑畫面的上帝公式真結局
+            return; // 終止後續的 UI 更新，保持沉浸感
+        }
         checkBattle(); 
     // (在 castCyclotomicStrike 裡面找到這段並替換)
     } else {
@@ -2444,7 +2457,7 @@ function castCyclotomicStrike() {
         // 🌟 關鍵修復：把真理面板隱藏起來
         let mathPanel = document.getElementById('math-ascension-panel');
         if(mathPanel) mathPanel.style.display = 'none'; 
-        
+        revive(); // 直接復活，讓玩家有機會再試一次
         updateUI();
     }
 }
@@ -2492,6 +2505,154 @@ function getCyclotomicCoeffs(n) {
     
     // 將結果反轉 (由高次到低次輸出，符合玩家輸入習慣)
     return polys[n].slice().reverse();
+}
+// --- 🌌 真·結局系統：歐拉之影的終焉 ---
+function triggerEulerEnding() {
+    // 1. 建立全螢幕黑色幕布 (帶有深淵與星空的漸層)
+    const overlay = document.createElement('div');
+    overlay.style = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: radial-gradient(circle, #0f2027 0%, #203a43 50%, #2c5364 100%);
+        color: #ecf0f1; display: flex; flex-direction: column;
+        justify-content: center; align-items: center; z-index: 10000;
+        transition: opacity 4s; opacity: 0; font-family: 'Times New Roman', serif;
+        text-align: center;
+    `;
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.style.opacity = '1', 100);
+
+    // 2. 結局文字 (結合「絕對真理」與「歐拉公式」的史詩敘事)
+    // 2. 結局文字 (結合「分圓多項式」、「單位根」與「輪迴」的史詩敘事)
+    const story = [
+        "分圓多項式的根，完美地切裂了最後的虛數屏障...",
+        "【絕對真理 ‧ 歐拉之影】放下了手中那支刻劃著無窮級數的筆。",
+        "祂龐大的身軀開始在 ${randomN} 次單位根的光芒中崩塌、消散。",
+        "『你解開了圓的詛咒。』祂的聲音在崩落的維度中迴盪，",
+        "『完美的分割，將混沌的無限，化為了有理的秩序。』",
+        `整整 ${player.rebirthCount} 次的轉生，你在這座無盡的輪迴之塔中，畫出了最完美的單位圓。`,
+        " ",
+        "<span style='font-size: 2.8em; color: #f1c40f; text-shadow: 0 0 25px #f1c40f, 0 0 10px #e67e22;'>e<sup>iπ</sup> + 1 = 0</span>",
+        " ",
+        "所有的指數級膨脹、虛數的夢魘、以及如圓周率般無止境的迴圈...",
+        "都在 $\\Phi_n(x)$ 的引導下，收斂於最純粹的 $0$。",
+        " ",
+        "<b style='color:#00d2ff; font-size: 2em; text-shadow: 0 0 15px #3a7bd5;'>【 真 · 結局：超越圓的真理 】</b>",
+        "塔的結界已然粉碎，因果的迴圈被徹底切斷。",
+        "你不再是維度的囚徒，因為你，就是這個宇宙的新公理。"
+    ];
+
+    let current = 0;
+    const container = document.createElement('div');
+    overlay.appendChild(container);
+
+    function nextLine() {
+        if (current < story.length) {
+            const p = document.createElement('p');
+            p.innerHTML = story[current];
+            p.style = "opacity: 0; transition: opacity 2.5s; margin: 15px 0; font-size: 1.3em; letter-spacing: 2px;";
+            container.appendChild(p);
+            
+            setTimeout(() => p.style.opacity = '1', 50);
+            current++;
+            // 當顯示到上帝公式時，停頓久一點讓玩家感受震撼
+            let delay = (current === 7) ? 4500 : 2500;
+            setTimeout(nextLine, delay); 
+        }  else {
+            // 結局結束，建立按鈕容器
+            const btnContainer = document.createElement('div');
+            btnContainer.style = "margin-top: 50px; display: flex; gap: 30px; justify-content: center;";
+
+            // 🔴 選擇 A：踏入第 11 次輪迴 (保留業報，繼續轉生)
+            const btnRebirth = document.createElement('button');
+            btnRebirth.innerHTML = "✨ 踏入下一次輪迴<br><span style='font-size:0.6em; color:#bdc3c7;'>保留數據，重置層數與世界</span>";
+            btnRebirth.style = `
+                padding: 15px 30px; background: transparent; border: 2px solid #f1c40f; 
+                color: #f1c40f; cursor: pointer; font-size: 1.2em; font-weight: bold; 
+                border-radius: 8px; box-shadow: 0 0 15px rgba(241, 196, 15, 0.4); transition: 0.4s;
+            `;
+            btnRebirth.onmouseover = () => { btnRebirth.style.background = "#f1c40f"; btnRebirth.style.color = "#000"; };
+            btnRebirth.onmouseout = () => { btnRebirth.style.background = "transparent"; btnRebirth.style.color = "#f1c40f"; };
+            btnRebirth.onclick = () => {
+                btnRebirth.innerText = "轉生中...宇宙重構中...";
+                if (document.body.contains(overlay)) {
+                    document.body.removeChild(overlay);
+                }
+                // 執行你原本的轉生邏輯 (層數歸 1，轉生次數 +1 等)
+                if (player.towerFloor > player.maxTowerFloor) {
+                    player.maxTowerFloor = player.towerFloor;
+                }
+                // 🌟 1. 轉生次數 +1
+                player.rebirthCount++;
+                let rebirthMultiplier = 1 + player.rebirthCount; 
+                player.towerFloor = 1;
+                player.level = 1;
+                player.exp = 0;
+                player.nextLevelExp = 100;
+                player.maxHp = 100 * rebirthMultiplier; 
+                player.hp = player.maxHp;
+                player.baseAtk = [5 * rebirthMultiplier, 12 * rebirthMultiplier]; 
+                player.baseDef = 0;
+                player.extraATK = 0;
+                player.extraDEF = 0;
+                player.enhanceStones /=2;
+                player.coin = 0;
+                player.expAmulet = 0;
+                player.goldAmulet = 0;
+                
+                player.inventory = [];
+                player.equiptment = { weapon: null, armor: null };
+                
+                // 重置技能冷卻
+                for (let key in player.skills) player.skills[key] = 0;
+                player.skillLevels = { fireball: 1, lightning: 1, heal: 1, windWalk: 1, holyLight: 1, blackHole: 1 };
+                player.currentArea = 0;  
+                player.bossDefeatedLevel = 0;
+                currentMonster = null; // 清除 Boss
+                if (typeof saveGame === 'function') saveGame();
+                setTimeout(() => {
+                    window.location.reload(); 
+                }, 500);
+            };
+
+            // 🔵 選擇 B：斬斷輪迴 (抹除塔與轉生，永遠留在這個存檔)
+            const btnStay = document.createElement('button');
+            btnStay.innerHTML = "🌌 斬斷輪迴<br><span style='font-size:0.6em; color:#bdc3c7;'>塔將崩塌，轉生將死，你化為永恆</span>";
+            btnStay.style = `
+                padding: 15px 30px; background: transparent; border: 2px solid #00d2ff; 
+                color: #00d2ff; cursor: pointer; font-size: 1.2em; font-weight: bold; 
+                border-radius: 8px; box-shadow: 0 0 15px rgba(0, 210, 255, 0.4); transition: 0.4s;
+            `;
+            btnStay.onmouseover = () => { btnStay.style.background = "#00d2ff"; btnStay.style.color = "#000"; };
+            btnStay.onmouseout = () => { btnStay.style.background = "transparent"; btnStay.style.color = "#00d2ff"; };
+            btnStay.onclick = () => {
+                // 🌟 賦予「超脫」標記
+                player.hasTranscended = true; 
+                currentMonster = null; // 確保沒有怪物干擾 UI
+                if (typeof saveGame === 'function') saveGame();
+
+                // 移除結局黑色幕布
+                document.body.removeChild(overlay);
+                
+                const exploreBtn = document.getElementById('explore-btn');
+                if (exploreBtn) exploreBtn.style.display = 'inline-block';
+                // 假設你有一個轉生按鈕，請把 ID 換成你實際的
+                const rebirthSection = document.getElementById('rebirth-container'); 
+                if (rebirthSection) rebirthSection.style.display = 'none';
+
+                const towerSection = document.getElementById('tower-container'); 
+                if (towerSection) towerSection.style.display = 'none';
+
+                addLog("🌌 <b style='color:#00d2ff; font-size:1.2em;'>塔已崩塌，輪迴已死。你成為了這個維度唯一的真理。</b>");
+            };
+
+            btnContainer.appendChild(btnRebirth);
+            btnContainer.appendChild(btnStay);
+            overlay.appendChild(btnContainer);
+        }
+    }
+    
+    // 延遲兩秒後開始播放字幕
+    setTimeout(nextLine, 2000);
 }
 // --- 遊戲啟動 ---
 loadGame(); 
