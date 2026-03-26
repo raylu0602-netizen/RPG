@@ -1144,7 +1144,7 @@ function attack() {
         if (hits === 2) {
             addLog(`🌪️ <b style="color:#1abc9c;">【風行連斬】</b> 🩸 <b style="color:#e74c3c;">嗜血真傷！</b> 殘影撕裂防禦，造成 <b style="color:#e74c3c; font-size:1.1em;">${totalFinalDmg}</b> 點真實總傷害，並吸取 <b style="color:#2ecc71;">${lifesteal}</b> 點生命！`);
         } else {
-            addLog(`🩸 <b style="color:#e74c3c;">【嗜血魔刃】</b> 貫穿了防禦！造成 <b style="color:#e74c3c;">${totalFinalDmg}</b> 點真實傷害，並回復 <b style="color:#2ecc71;">${lifesteal}</b> 點生命！`);
+            addLog(`🩸 <b style="color:#e74c3c;">【嗜血魔刃】</b> 貫穿了防禦！造成 <b style="color:#e74c3c;">${totalFinalDmg}</b> 點傷害，並回復 <b style="color:#2ecc71;">${lifesteal}</b> 點生命！`);
         }
     } else {
         // 一般普攻廣播
@@ -1477,6 +1477,10 @@ function useBlackHole() {
 }
 function monsterTurn() {
     // 🌟🌟🌟 結算狀態異常 (在怪物攻擊前結算) 🌟🌟🌟
+    if(currentMonster.name === "絕對屏障 ‧ 鋼鐵巨神兵"  && currentMonster.burnDuration > 0) {
+        currentMonster.burnDuration = 0; // 鋼鐵巨神兵免疫燃燒，直接清除燃燒效果
+        addLog(`🛡️ <b style="color:#7f8c8d;">鋼鐵巨神兵的【絕對屏障】免疫了燃燒效果！燃燒效果已被清除。</b>`);
+    }
     if (currentMonster.burnDuration && currentMonster.burnDuration > 0) {
         currentMonster.hp -= currentMonster.burnDmg;
         currentMonster.burnDuration--;
@@ -1496,7 +1500,6 @@ function monsterTurn() {
         
         // 每 4 回合發動一次死神鐮刀
         if (currentMonster.turnCount % 4 === 0) {
-            // 🌟 無視防禦，直接造成最大生命 150% 的真實傷害
             let deathDamage = Math.floor(player.maxHp * 100); 
             player.hp -= deathDamage;
             addLog(`🩸 死神揮下了鐮刀！對你造成了 ${deathDamage} 點真實傷害！`);
@@ -2296,13 +2299,13 @@ function exploreTower() {
             name: "👁️ 絕對真理 ‧ 歐拉之影",
             hp: Infinity, 
             maxHp: Infinity,
-            atk: 0, 
-            atkRange: [0, 0],
+            atk: [0, 0],
             def: Infinity,
             isTower: true,
             shieldN: randomN,
             coin: 0, 
-            exp: 0 
+            exp: 0,
+            img: "images/ola.jpg"
         };
         
         addLog(`ERROR: <b style="color:red; background:black; font-family:monospace;">System.Exception: 維度崩塌。</b>`);
@@ -2320,11 +2323,11 @@ function exploreTower() {
             name: "🃏 維度賭徒 ‧ 迪勒",
             hp: Infinity, // 牌局不打血量
             maxHp: Infinity,
-            atk: 0, 
-            atkRange: [0, 0],
+            atk: [0, 0],
             def: Infinity,
             isTower: true,
-            isPokerGame: true // 🌟 標記這是一場牌局
+            isPokerGame: true, // 🌟 標記這是一場牌局
+            image: "images/pokerboss.jpg"
         };
         
         addLog(`🃏 <b style="color:#d4af37; font-size: 1.5em;">「打打殺殺太野蠻了，造物主，我們來玩把大老二吧？」</b>`);
@@ -2343,42 +2346,46 @@ function exploreTower() {
     
         // 根據樓層給予動態數值倍率 (越爬越高，Boss 血量攻擊力越扯)
         let scale = Math.pow(1.5, player.towerFloor ); 
-        let baseHp = 100000 * scale;
-        let baseAtk = 5000 * scale;
+        let baseHp = Math.floor(100000 * scale);
+        let baseAtk = Math.floor(5000 * scale);
 
         // 建立 4 隻機制 Boss 的清單
         const bossPool = [
             {
                 name: "絕對屏障 ‧ 鋼鐵巨神兵",
                 hp: baseHp, maxHp: baseHp,
-                atkRange: [baseAtk, baseAtk ], 
+                atk: [baseAtk, baseAtk ], 
                 def: Infinity, // 物理免疫
                 isTower: true,
+                image: "images/iron.jpg",
             },
             {
                 name: "絕對零度 ‧ 冰霜巨龍",
                 hp: baseHp * 0.8, maxHp: baseHp * 0.8,
-                atkRange: [baseAtk * 1.5, baseAtk * 1.5],
+                atk: [baseAtk * 1.5, baseAtk * 1.5],
                 def: 50000, 
                 isTower: true,
-                burnDuration: 0
+                burnDuration: 0,
+                image: "images/ice.jpg",
             },
             {
                 name: "猩紅死神 ‧ 塔納托斯",
                 hp: baseHp * 1.2, 
                 maxHp: baseHp * 1.2,
-                atkRange: [0, 0], // 攻擊力由特殊機制決定
+                atk: [0, 0], // 攻擊力由特殊機制決定
                 def: 30000,
                 isTower: true,
-                turnCount: 0 // 用來計算回合數
+                turnCount: 0, // 用來計算回合數
+                image: "images/death.jpg",
             },
             {
                 name: "虛空鏡魔 ‧ 迪斯瑪",
                 hp: baseHp * 0.5, 
                 maxHp: baseHp * 0.5, // 血量極少
-                atkRange: [baseAtk , baseAtk ],
+                atk: [baseAtk , baseAtk ],
                 def: 0, // 防禦極低
                 isTower: true,
+                image: "images/mirror.jpg",
             }
         ];
 
@@ -2387,18 +2394,33 @@ function exploreTower() {
         currentMonster = bossPool[randomIndex];
         
         addLog(`⚠️ <b style='color:red;'>警告！遭遇第 ${player.towerFloor} 層守衛：${currentMonster.name}！</b>`);
+        // 🌟 關鍵 1：手動把戰鬥按鈕叫出來，探險按鈕藏起來
+        let exploreBtn = document.getElementById('explore-btn'); 
+        let battleActions = document.getElementById('battle-actions'); 
+        if (exploreBtn) exploreBtn.style.display = 'none';
+        if (battleActions) battleActions.style.display = 'flex'; 
+
+        // 🌟 關鍵 2：強制更新 UI 圖片跟名字
+        let monsterNameEl = document.getElementById('monster-name');
+        let monsterImgEl = document.getElementById('monster-image');
+        if (monsterNameEl) monsterNameEl.innerText = currentMonster.name;
+        if (monsterImgEl) monsterImgEl.src = currentMonster.image;
+
+        // 🌟 關鍵 3：呼叫整體 UI 更新，然後提早結束函數！(這行最重要)
+        updateUI();
+        return;
 
     }
     // 塔內怪物公式
-    let mHp = Math.floor(50000 * Math.pow(1.5, floor)); 
-    let mAtk = Math.floor(20000 * Math.pow(1.2, floor));
-    let def = Math.floor(1000 * Math.pow(1.15, floor));
+    let mHp = Math.floor(50000 * Math.pow(1.5, player.towerFloor)); 
+    let mAtk = Math.floor(20000 * Math.pow(1.2, player.towerFloor));
+    let def = Math.floor(1000 * Math.pow(1.15, player.towerFloor));
     let mExp = 0;
     let mCoin = 0;
 
     // 🌟 1. 補上 image 屬性，防禦破圖 (這裡幫你找了一個霸氣的惡魔圖示)
     currentMonster = {
-        name: `🗼 虛空守衛 (第${floor}層)`,
+        name: `🗼 虛空守衛 (第${player.towerFloor}層)`,
         maxHp: mHp,
         hp: mHp,
         atk: [mAtk, mAtk ],
@@ -2416,6 +2438,11 @@ function exploreTower() {
     if (exploreBtn) exploreBtn.style.display = 'none';
     if (battleActions) battleActions.style.display = 'flex'; // 或 'block' 依你原本的設定
 
+    let monsterContainer = document.getElementById('monster-area');
+    if (monsterContainer) {
+        monsterContainer.style.display = 'block'; // 讓它立刻出現！
+    }
+
     // 🌟 3. 強制更新怪物名稱與圖片 UI (防止畫面卡在「準備探險...」)
     let monsterNameEl = document.getElementById('monster-name');
     let monsterImgEl = document.getElementById('monster-image');
@@ -2423,7 +2450,7 @@ function exploreTower() {
     if (monsterImgEl) monsterImgEl.src = currentMonster.image;
 
     addLog(`<div style="border-top: 1px dashed #e74c3c; margin: 10px 0;"></div>`);
-    addLog(`🗼 <b style="color:#e74c3c; font-size: 1.2em;">你踏入了無盡之塔 第 ${floor} 層！</b>`);
+    addLog(`🗼 <b style="color:#e74c3c; font-size: 1.2em;">你踏入了無盡之塔 第 ${player.towerFloor} 層！</b>`);
     addLog(`💀 恐怖的 ${currentMonster.name} 降臨了！(血量: ${mHp}, 攻擊力: ${mAtk})`);
     
     updateUI();

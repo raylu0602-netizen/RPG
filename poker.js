@@ -114,6 +114,11 @@ function initializePokerGame() {
     // 發 13 張給玩家
     for (let i = 0; i < 13; i++) pokerGame.playerHand.push(pokerGame.deck.pop());
 
+    // 🌟 修正：如果是練習模式，把牌庫截斷只留 13 張，讓迪勒當個誠實人！
+    if (pokerGame.isPractice) {
+        pokerGame.deck = pokerGame.deck.slice(0, 13);
+    }
+
     // Boss 藏一張 2 (作弊模式)
     if (!pokerGame.isPractice) {
         let cheatIdx = pokerGame.deck.findIndex(c => c.rank === '2' && (c.suit === '♠' || c.suit === '♥'));
@@ -141,7 +146,7 @@ function startPokerPractice() {
     // 2. 隱藏出千技能區
     document.getElementById('cheat-skills-section').style.display = 'none';
     
-    // 🌟 3. 隱藏主畫面的探險按鈕
+    // 3. 隱藏主畫面的探險按鈕
     const exploreBtn = document.getElementById('explore-btn');
     if (exploreBtn) exploreBtn.style.display = 'none';
     
@@ -179,11 +184,8 @@ function renderPokerTable() {
     }
 
     // 按鈕區
-
-    // 生成按鈕容器
     let actionButtonsHTML = `<div style="margin-top: 20px;">`;
 
-    // 1. 出牌按鈕 (只有選牌時才顯示，或者你可以設定一直顯示但無效)
     if (pokerGame.selectedCards.length > 0) {
         actionButtonsHTML += `
             <button onclick="playSelectedCards()" style="background-color: #27ae60; color: white; border: none; padding: 10px 20px; font-size: 1.1em; border-radius: 5px; cursor: pointer; font-weight: bold; margin-right: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
@@ -192,7 +194,6 @@ function renderPokerTable() {
         `;
     }
 
-    // 2. PASS 按鈕 (只要桌上有牌，就可以 PASS)
     if (pokerGame.tableCards) {
         actionButtonsHTML += `
             <button onclick="passTurn()" style="background-color: #e67e22; color: white; border: none; padding: 10px 20px; font-size: 1.1em; border-radius: 5px; cursor: pointer; font-weight: bold; margin-right: 10px;">
@@ -201,7 +202,6 @@ function renderPokerTable() {
         `;
     }
 
-    // 3. 取消選取按鈕
     if (pokerGame.selectedCards.length > 0) {
         actionButtonsHTML += `
             <button onclick="pokerGame.selectedCards = []; renderPokerTable();" style="background-color: #7f8c8d; color: white; border: none; padding: 10px 20px; font-size: 1.1em; border-radius: 5px; cursor: pointer; font-weight: bold; margin-right: 10px;">
@@ -210,7 +210,6 @@ function renderPokerTable() {
         `;
     }
 
-    // 4. 練習模式的結束按鈕
     if (pokerGame.isPractice) {
         actionButtonsHTML += `
             <button onclick="exitPokerGame()" style="background-color: #c0392b; color: white; border: none; padding: 10px 20px; font-size: 1.1em; border-radius: 5px; cursor: pointer; font-weight: bold;">
@@ -222,7 +221,6 @@ function renderPokerTable() {
     actionButtonsHTML += `</div>`;
     handDiv.innerHTML += actionButtonsHTML;
 
-    // 更新 Boss 張數顯示
     document.getElementById('boss-card-count').innerText = pokerGame.bossHandCount;
 }
 
@@ -257,6 +255,9 @@ function playSelectedCards() {
 
 // --- 5. AI 與 技能 ---
 function bossPlay() {
+    // 🌟 防呆：沒牌就不能動
+    if (pokerGame.bossHandCount <= 0) return;
+
     addLog("👁️ <b style='color:#9b59b6;'>維度賭徒正在觀測可能性...</b>");
 
     // 技能判定 (練習模式不發動)
@@ -294,7 +295,9 @@ function bossPlay() {
             let idx = pokerGame.deck.findIndex(c => c.id === mc.id);
             if(idx > -1) pokerGame.deck.splice(idx, 1);
         });
-        pokerGame.bossHandCount -= move.cards.length;
+        
+        // 🌟 修正：確保牌數絕不變成負數
+        pokerGame.bossHandCount = Math.max(0, pokerGame.bossHandCount - move.cards.length);
         addLog(`🃏 【維度賭徒】打出了 ${move.maxCard.toString()} 相關牌組。`);
     }
 
@@ -305,14 +308,24 @@ function bossPlay() {
 // 移植 Python 版光速 AI
 function findValidMoveFast(hand, lastHand) {
     let n = lastHand ? lastHand.cards.length : 0;
+    
+    // 🌟 防呆：要回應的牌數大於剩餘手牌數時，強制 PASS，防止變成負數！
+    if (n > 0 && n > pokerGame.bossHandCount) return "PASS";
+
     let sorted = [...hand].sort((a, b) => a.power - b.power);
     let isThreat = pokerGame.playerHand.length <= 2;
 
     if (n === 0) { // 首攻
-        let straights = findAllStraights(sorted); if(straights.length) return straights[0];
-        let fullHouses = findAllFullHouses(sorted); if(fullHouses.length) return fullHouses[0];
-        let { pairs } = getComponents(sorted); 
-        if(pairs.length) return new PokerHand(sorted.filter(c => c.rank === pairs[0]).slice(0, 2));
+        // 🌟 防呆：手牌夠 5 張才能出順子或葫蘆
+        if (pokerGame.bossHandCount >= 5) {
+            let straights = findAllStraights(sorted); if(straights.length) return straights[0];
+            let fullHouses = findAllFullHouses(sorted); if(fullHouses.length) return fullHouses[0];
+        }
+        // 🌟 防呆：手牌夠 2 張才能出對子
+        if (pokerGame.bossHandCount >= 2) {
+            let { pairs } = getComponents(sorted); 
+            if(pairs.length) return new PokerHand(sorted.filter(c => c.rank === pairs[0]).slice(0, 2));
+        }
         return new PokerHand([sorted[0]]);
     }
 
@@ -418,23 +431,18 @@ function exitPokerGame() {
     const pokerPanel = document.getElementById('poker-arena-panel');
     if (pokerPanel) pokerPanel.style.display = 'none';
 
-    // 2. 讓原本的「探索」或「戰鬥」按鈕回來
-    // 💡 請確認你的按鈕 ID 是否為 'explore-btn'
     const exploreBtn = document.getElementById('explore-btn');
     if (exploreBtn) {
         exploreBtn.style.display = 'inline-block';
-        // 如果你現在是在第 200 層贏了，更新按鈕文字
         if (!pokerGame.isPractice) {
             exploreBtn.innerText = `🧭 前往第 ${player.towerFloor} 層`;
         }
     }
 
-    // 3. 核心：把 Boss (當前怪物) 設為 null，這樣 updateUI 才會隱藏 Boss 圖片
     if (typeof currentMonster !== 'undefined') {
         currentMonster = null;
     }
 
-    // 4. 重置牌局狀態，避免下次進來牌沒清空
     pokerGame.tableCards = null;
     pokerGame.selectedCards = [];
     pokerGame.isPractice = false;
@@ -442,9 +450,8 @@ function exitPokerGame() {
     if (typeof updateUI === 'function') updateUI();
     addLog("✨ <b style='color:#3498db;'>牌局結束，回到冒險世界。</b>");
 }
-// --- 🃏 玩家按下「PASS」按鈕 ---
+
 function passTurn() {
-    // 🌟 防呆：如果桌上沒牌（你是發球方），不能 PASS
     if (!pokerGame.tableCards) {
         addLog("⚠️ <b style='color:#f39c12;'>現在是你的發球回合，必須出一張牌，不能 PASS！</b>");
         return;
@@ -452,14 +459,10 @@ function passTurn() {
 
     addLog("🃏 你選擇了 <b style='color:#7f8c8d;'>PASS</b>。");
 
-    // 🌟 核心邏輯：
-    // 1. 玩家 PASS 代表這一輪結束，桌面清空，讓 Boss 拿回「發球權」
     pokerGame.tableCards = null; 
     
-    // 2. 清空選取的牌，並重新渲染
     pokerGame.selectedCards = [];
     renderPokerTable();
 
-    // 3. 換 Boss 出牌（因為你 PASS 了，所以下一手他可以隨便出）
     setTimeout(bossPlay, 500);
 }
