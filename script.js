@@ -2305,7 +2305,7 @@ function exploreTower() {
             shieldN: randomN,
             coin: 0, 
             exp: 0,
-            img: "images/ola.jpg"
+            image: "images/ola.jpg"
         };
         
         addLog(`ERROR: <b style="color:red; background:black; font-family:monospace;">System.Exception: 維度崩塌。</b>`);
