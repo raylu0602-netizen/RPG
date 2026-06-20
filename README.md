@@ -36,5 +36,4 @@
     
     遊戲進度會自動儲存於瀏覽器的 localStorage 中。若要重置遊戲，請在開發者工具 (F12) 中清除緩存。
 立即遊玩[https://raylu0602-netizen.github.io/RPG/]
-https://wormhole.app/xmddOP#Df5kHlXIvNFmytCiG-Pf0w
 
